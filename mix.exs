@@ -1,4 +1,4 @@
-defmodule Asd.Mixfile do
+defmodule Canary.Mixfile do
   use Mix.Project
 
   def project do
