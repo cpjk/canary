@@ -1,5 +1,4 @@
 defmodule Canary do
-  alias Cooking.Repo
 
   import Canada, only: [can?: 2]
   import Canada.Can, only: [can?: 3]
@@ -9,8 +8,10 @@ defmodule Canary do
   opts[:model] into conn.assigns.loaded_resource.
   """
   def load_resource(conn, opts) do
-    loaded_resource = opts[:model]
-    |> fetch_resource(conn.params["id"])
+    loaded_resource = fetch_resource(
+                        opts[:repo],
+                        opts[:model],
+                        conn.params["id"])
 
     %{ conn | assigns: Map.put(conn.assigns, :loaded_resource, loaded_resource) }
   end
@@ -20,8 +21,8 @@ defmodule Canary do
   Fetch the resource from the database.
   TODO Need a place to define which repo to use.
   """
-  defp fetch_resource(model, resource_id) do
-    Repo.get(model, resource_id)
+  defp fetch_resource(repo, model, resource_id) do
+    repo.get(model, resource_id)
   end
 
   @doc """
@@ -36,9 +37,8 @@ defmodule Canary do
 
   def authorize_resource(conn, opts) do
     current_user = conn.assigns.current_user
-    model = opts[:model]
-    resource = Repo.get(model, conn.params["id"])
     action = conn.private.phoenix_action
+    resource = fetch_resource(opts[:repo], opts[:model], conn.params["id"])
 
     case current_user |> can? action, resource do
       true ->
