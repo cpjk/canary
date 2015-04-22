@@ -33,7 +33,7 @@ defmodule Canary do
 
   def authorize_resource(conn, opts) do
     current_user = conn.assigns.current_user
-    action = action(conn)
+    action = get_action(conn)
     resource = fetch_resource(opts[:repo], opts[:model], conn.params["id"])
 
     case current_user |> can? action, resource do
@@ -58,7 +58,7 @@ defmodule Canary do
     repo.get(model, resource_id)
   end
 
-  defp action(conn) do
+  defp get_action(conn) do
     conn.private
     |> Map.fetch(:phoenix_action)
     |> case do
