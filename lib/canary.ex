@@ -6,6 +6,8 @@ defmodule Canary do
   @doc """
   Load the resource given by conn.params["id"] and ecto model given by
   opts[:model] into conn.assigns.loaded_resource.
+  If the resource cannot be fetched, conn.assigns.load_resource is set
+  to nil.
   """
   def load_resource(conn, opts) do
     loaded_resource = fetch_resource(
@@ -16,20 +18,14 @@ defmodule Canary do
     %{ conn | assigns: Map.put(conn.assigns, :loaded_resource, loaded_resource) }
   end
 
-
   @doc """
-  Fetch the resource from the database.
-  TODO Need a place to define which repo to use.
-  """
-  defp fetch_resource(repo, model, resource_id) do
-    repo.get(model, resource_id)
-  end
+  Authorize the current user for the given resource.
+  In order to use this function,
+    1) conn.assigns.current_user must be the module name of an ecto model, and
+    2) conn.private must be a map.
 
-  @doc """
-  Authorizes the current user for the given resource.
-  In order for authorization, conn.assigns.current_users
-  must contain an ecto model.
-  Throws an exceptionggj
+  If authorization, succeeds, assign conn.assigns.authorized to true.
+  If authorization, fails, assign conn.assigns.authorized to false.
   """
   def authorize_resource(conn = %{assigns: %{current_user: user}}, _opts) when is_nil(user) do
     %{ conn | assigns: Map.put(conn.assigns, :access_denied, true) }
@@ -48,10 +44,18 @@ defmodule Canary do
     end
   end
 
+  @doc """
+  Authorize the given resource and then load it if
+  authorization succeeds.
+  """
   def load_and_authorize_resource(conn, opts) do
     conn
     |> authorize_resource(opts)
     |> load_if_authorized(opts)
+  end
+
+  defp fetch_resource(repo, model, resource_id) do
+    repo.get(model, resource_id)
   end
 
   defp action(conn) do
