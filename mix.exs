@@ -21,7 +21,7 @@ defmodule Canary.Mixfile do
     [
      { :ecto, "~> 0.10.0" },
      { :canada, "~> 1.0.0" },
-     { :plug, "~> 0.12.0" }
+     { :plug, "~> 0.11.3" }
     ]
   end
 end
