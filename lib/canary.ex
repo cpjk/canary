@@ -37,7 +37,7 @@ defmodule Canary do
 
   def authorize_resource(conn, opts) do
     current_user = conn.assigns.current_user
-    action = conn.private.phoenix_action
+    action = action(conn)
     resource = fetch_resource(opts[:repo], opts[:model], conn.params["id"])
 
     case current_user |> can? action, resource do
@@ -52,6 +52,15 @@ defmodule Canary do
     conn
     |> authorize_resource(opts)
     |> load_if_authorized(opts)
+  end
+
+  defp action(conn) do
+    conn.private
+    |> Map.fetch(:phoenix_action)
+    |> case do
+      {:ok, action} -> action
+      _             -> conn.assigns.action
+    end
   end
 
   defp load_if_authorized(conn = %{assigns: %{authorized: true} }, opts), do: load_resource(conn, opts)
