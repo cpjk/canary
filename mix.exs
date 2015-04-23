@@ -15,9 +15,6 @@ defmodule Canary.Mixfile do
      deps: deps]
   end
 
-  # Configuration for the OTP application
-  #
-  # Type `mix help compile.app` for more information
   def application do
     [applications: [:logger]]
   end
@@ -25,7 +22,7 @@ defmodule Canary.Mixfile do
   defp package do
     [contributors: ["Chris Kelly"],
     licenses: ["MIT"],
-    links: ["https://github.com/cpjk/canary"]]
+    links: %{"GitHub" => "https://github.com/cpjk/canary"}]
   end
 
   defp deps do
