@@ -10,7 +10,7 @@ Inspired by [CanCan](https://github.com/CanCanCommunity/cancancan) for Ruby on R
 In your ```mix.exs``` file:
 ```elixir
 defp deps do
-  {:canary, github: "cpjk/canary"}
+  {:canary, "~> 0.1.0"}
 end
 ```
 
