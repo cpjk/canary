@@ -24,8 +24,8 @@ defmodule Canary do
     1) conn.assigns.current_user must be the module name of an ecto model, and
     2) conn.private must be a map.
 
-  If authorization, succeeds, assign conn.assigns.authorized to true.
-  If authorization, fails, assign conn.assigns.authorized to false.
+  If authorization succeeds, assign conn.assigns.authorized to true.
+  If authorization fails, assign conn.assigns.authorized to false.
   """
   def authorize_resource(conn = %{assigns: %{current_user: user}}, _opts) when is_nil(user) do
     %{ conn | assigns: Map.put(conn.assigns, :access_denied, true) }
