@@ -3,8 +3,13 @@ defmodule Canary.Mixfile do
 
   def project do
     [app: :canary,
-     version: "0.0.1",
+     version: "0.1.0",
      elixir: "~> 1.0",
+     package: package,
+     description: """
+     An authorization library to restrict what resources the current user is
+     allowed to access.
+     """,
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps]
@@ -15,6 +20,12 @@ defmodule Canary.Mixfile do
   # Type `mix help compile.app` for more information
   def application do
     [applications: [:logger]]
+  end
+
+  defp package do
+    [contributors: ["Chris Kelly"],
+    licenses: ["MIT"],
+    links: ["https://github.com/cpjk/canary"]]
   end
 
   defp deps do
