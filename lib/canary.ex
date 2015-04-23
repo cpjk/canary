@@ -1,6 +1,5 @@
 defmodule Canary do
 
-  import Canada, only: [can?: 2]
   import Canada.Can, only: [can?: 3]
 
   @doc """
