@@ -7,7 +7,16 @@ the current user is allowed to access.
 Inspired by [CanCan](https://github.com/CanCanCommunity/cancancan) for Ruby on Rails.
 
 ## Installation ##
-In your ```mix.exs``` file:
+For the latest master:
+
+```elixir
+defp deps do
+  {:canary, github: "cpjk/canary"}
+end
+```
+
+For the latest release:
+
 ```elixir
 defp deps do
   {:canary, "~> 0.1.0"}
