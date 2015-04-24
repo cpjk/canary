@@ -24,6 +24,8 @@ Canary provides three functions to be used as plugs to load and authorize resour
 
 All three functions require ```conn.assigns.current_user``` to contain an Ecto record holding the current_user.
 
+Just ```use Canary``` in order to use the plugs. In a Phoenix app the best place would probably be in your ```web/web.ex```.
+
 ####load_resource/2####
 Loads the resource with the id in ```conn.params["id"]``` from the database using the given Ecto repo and model, and assigns the resource to ```conn.assigns.fetched_resource```.
 
