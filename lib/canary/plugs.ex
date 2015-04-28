@@ -45,6 +45,12 @@ defmodule Canary.Plugs do
   @doc """
   Authorize the given resource and then load it if
   authorization succeeds.
+
+  If the resource cannot be loaded or authorization
+  fails, conn.assigns.loaded_resource is set to nil.
+
+  The result of the authorization (true/false) is
+  assigned to conn.assigns.authorized.
   """
   def load_and_authorize_resource(conn, opts) do
     conn
@@ -66,5 +72,7 @@ defmodule Canary.Plugs do
   end
 
   defp load_if_authorized(conn = %{assigns: %{authorized: true} }, opts), do: load_resource(conn, opts)
-  defp load_if_authorized(conn = %{assigns: %{authorized: false} }, _opts), do: conn
+  defp load_if_authorized(conn = %{assigns: %{authorized: false} }, _opts) do
+    %{ conn | assigns: Map.put(conn.assigns, :loaded_resource, nil) }
+  end
 end
