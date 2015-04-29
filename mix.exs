@@ -3,7 +3,7 @@ defmodule Canary.Mixfile do
 
   def project do
     [app: :canary,
-     version: "0.2.0",
+     version: "0.3.0",
      elixir: "~> 1.0",
      package: package,
      description: """
@@ -29,7 +29,7 @@ defmodule Canary.Mixfile do
     [
      { :ecto, "~> 0.10.0" },
      { :canada, "~> 1.0.0" },
-     { :plug, "~> 0.11.3" }
+     { :plug, ">= 0.11.3" }
     ]
   end
 end
