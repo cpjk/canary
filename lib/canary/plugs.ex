@@ -9,7 +9,6 @@ defmodule Canary.Plugs do
   """
   def load_resource(conn, opts) do
     loaded_resource = fetch_resource(
-                        opts[:repo],
                         opts[:model],
                         conn.params["id"])
 
@@ -32,7 +31,7 @@ defmodule Canary.Plugs do
   def authorize_resource(conn, opts) do
     current_user = conn.assigns.current_user
     action = get_action(conn)
-    resource = fetch_resource(opts[:repo], opts[:model], conn.params["id"])
+    resource = fetch_resource(opts[:model], conn.params["id"])
 
     case current_user |> can? action, resource do
       true ->
@@ -58,8 +57,8 @@ defmodule Canary.Plugs do
     |> load_if_authorized(opts)
   end
 
-  defp fetch_resource(repo, model, resource_id) do
-    repo.get(model, resource_id)
+  defp fetch_resource(model, resource_id) do
+    Application.get_env(:canary, :repo).get(model, resource_id)
   end
 
   defp get_action(conn) do

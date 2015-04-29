@@ -35,13 +35,19 @@ All three functions require ```conn.assigns.current_user``` to contain an Ecto r
 
 Just ```use Canary``` in order to use the plugs. In a Phoenix app the best place would probably be in your ```web/web.ex```.
 
+Specify your Ecto repo in your config/config.exs:
+
+```
+config :canary, repo: Project.Repo
+```
+
 ####load_resource/2####
 Loads the resource with the id in ```conn.params["id"]``` from the database using the given Ecto repo and model, and assigns the resource to ```conn.assigns.fetched_resource```.
 
 For example,
 
 ```elixir
-plug :load_resource, model: Project.User, repo: Project.Repo
+plug :load_resource, model: Project.User
 ```
 Will load the ```Project.User``` with id given in the ```conn.params["id"]``` through ```Project.Repo```.
 
@@ -82,7 +88,7 @@ delete "/users/:id", UserController, :delete
 To automatically load the  ```Project.User``` with the ```id``` given in the params, you would plug your ```UserController``` like so:
 
 ```elixir
-plug :load_and_authorize_resource, model: Project.User, repo: Project.Repo
+plug :load_and_authorize_resource, model: Project.User
 ```
 
 In this case, the ```Project.User``` specified by ```conn.params["id]``` is loaded into ```conn.assigns.fetched_resource``` for ```GET /users/12```, but _not_ for ```DELETE /users/12```.

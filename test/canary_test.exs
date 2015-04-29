@@ -31,6 +31,8 @@ defmodule CanaryTest do
 
   @moduletag timeout: 100000000
 
+  Application.put_env :canary, :repo, Repo
+
   test "it loads the load resource correctly" do
     opts = %{repo: Repo, model: Post}
 
