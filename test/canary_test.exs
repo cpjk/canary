@@ -71,6 +71,23 @@ defmodule CanaryTest do
     assert authorize_resource(conn, opts) == expected
 
 
+    # when the current user can access the given resource
+    # and the action is specified in conn.assigns.action
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{},
+        assigns: %{current_user: %User{id: 1}, action: :show}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+
+
     # when both conn.assigns.action and conn.private.phoenix_action are defined
     # it uses conn.assigns.action for authorization
     params = %{"id" => 1}
