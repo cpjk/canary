@@ -54,7 +54,8 @@ defmodule CanaryTest do
   test "it authorizes the resource correctly" do
     opts = %{repo: Repo, model: Post}
 
-    # when the current user can access the give resource
+
+    # when the current user can access the given resource
     # and the action is a phoenix action
     params = %{"id" => 1}
     conn = conn(
@@ -105,7 +106,7 @@ defmodule CanaryTest do
     assert authorize_resource(conn, opts) == expected
 
 
-    # when the current user cannot access the give resource
+    # when the current user cannot access the given resource
     params = %{"id" => 2}
     conn = conn(
       %Plug.Conn{
@@ -142,7 +143,7 @@ defmodule CanaryTest do
     assert load_and_authorize_resource(conn, opts) == expected
 
 
-    # when the current user cannot access the give resource
+    # when the current user cannot access the given resource
     params = %{"id" => 2}
     conn = conn(
       %Plug.Conn{
