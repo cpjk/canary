@@ -1,16 +1,23 @@
 defmodule Canary.Plugs do
   import Canada.Can, only: [can?: 3]
+  import Ecto.Query
 
   @doc """
   Load the resource given by conn.params["id"] and ecto model given by
   opts[:model] into conn.assigns.loaded_resource.
   If the resource cannot be fetched, conn.assigns.load_resource is set
   to nil.
+
+  If the action is "index", all records from the specified model will be loaded.
+
   """
   def load_resource(conn, opts) do
-    loaded_resource = fetch_resource(
-                        opts[:model],
-                        conn.params["id"])
+    loaded_resource = case get_action(conn) do
+      :index ->
+        fetch_all(opts[:model])
+      _      ->
+        fetch_resource(opts[:model], conn.params["id"])
+    end
 
     %{ conn | assigns: Map.put(conn.assigns, :loaded_resource, loaded_resource) }
   end
@@ -23,6 +30,13 @@ defmodule Canary.Plugs do
 
   If authorization succeeds, assign conn.assigns.authorized to true.
   If authorization fails, assign conn.assigns.authorized to false.
+
+  For the index action, the resource in the Canada.Can implementation
+  should be the module name of the model rather than a struct.
+
+  For example:
+    use         def can?(%User{}, :index, Post), do: true
+    instead of  def can?(%User{}, :index, %Post{}), do: true
   """
   def authorize_resource(conn = %{assigns: %{current_user: user}}, _opts) when is_nil(user) do
     %{ conn | assigns: Map.put(conn.assigns, :access_denied, true) }
@@ -31,7 +45,13 @@ defmodule Canary.Plugs do
   def authorize_resource(conn, opts) do
     current_user = conn.assigns.current_user
     action = get_action(conn)
-    resource = fetch_resource(opts[:model], conn.params["id"])
+
+    resource = case action do
+      :index ->
+        opts[:model]
+      _      ->
+        fetch_resource(opts[:model], conn.params["id"])
+    end
 
     case current_user |> can? action, resource do
       true ->
@@ -50,6 +70,9 @@ defmodule Canary.Plugs do
 
   The result of the authorization (true/false) is
   assigned to conn.assigns.authorized.
+
+  Also, see the documentation for load_resource/2 and
+  authorize_resource/2.
   """
   def load_and_authorize_resource(conn, opts) do
     conn
@@ -59,6 +82,12 @@ defmodule Canary.Plugs do
 
   defp fetch_resource(model, resource_id) do
     Application.get_env(:canary, :repo).get(model, resource_id)
+  end
+
+  defp fetch_all(model) do
+     from(m in model)
+     |> select([m], m)
+     |> Application.get_env(:canary, :repo).all
   end
 
   defp get_action(conn) do

@@ -25,6 +25,8 @@ defimpl Canada.Can, for: User do
   def can?(%User{id: user_id}, action, %Post{user_id: user_id})
   when action in [:show], do: true
 
+  def can?(%User{}, :index, Post), do: true
+
   def can?(%User{}, _, _), do: false
 end
 
@@ -51,10 +53,19 @@ defmodule CanaryTest do
 
     assert load_resource(conn, opts) == expected
 
+
     # when the resource with the id cannot be fetched
     params = %{"id" => 3}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/3", params)
     expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, nil)}
+
+    assert load_resource(conn, opts) == expected
+
+
+    # when the action is "index"
+    params = %{}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :index}}, :get, "/posts", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, [%Post{id: 1}, %Post{id: 2}])}
 
     assert load_resource(conn, opts) == expected
   end
@@ -62,9 +73,22 @@ defmodule CanaryTest do
   test "it authorizes the resource correctly" do
     opts = [model: Post]
 
+    # when the action is "index"
+    params = %{}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :index},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
 
-    # when the current user can access the given resource
-    # and the action is a phoenix action
+    assert authorize_resource(conn, opts) == expected
+
+    # when the action is a phoenix action
     params = %{"id" => 1}
     conn = conn(
       %Plug.Conn{
