@@ -34,25 +34,25 @@ defmodule CanaryTest do
   Application.put_env :canary, :repo, Repo
 
   test "it loads the load resource correctly" do
-    opts = %{repo: Repo, model: Post}
+    opts = [model: Post]
 
     # when the resource with the id can be fetched
     params = %{"id" => 1}
-    conn = conn(%Plug.Conn{private: %{}}, :get, "/posts/1", params)
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
     expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, %Post{id: 1})}
 
     assert load_resource(conn, opts) == expected
 
     # when the resource with the id cannot be fetched
     params = %{"id" => 3}
-    conn = conn(%Plug.Conn{private: %{}}, :get, "/posts/3", params)
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/3", params)
     expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, nil)}
 
     assert load_resource(conn, opts) == expected
   end
 
   test "it authorizes the resource correctly" do
-    opts = %{repo: Repo, model: Post}
+    opts = [model: Post]
 
 
     # when the current user can access the given resource
@@ -123,7 +123,7 @@ defmodule CanaryTest do
   end
 
   test "it loads and authorizes the resource correctly" do
-    opts = %{repo: Repo, model: Post}
+    opts = [model: Post]
 
     # when the current user can access the given resource
     # and the resource can be loaded
