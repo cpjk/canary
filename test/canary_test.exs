@@ -27,6 +27,9 @@ defimpl Canada.Can, for: User do
 
   def can?(%User{}, :index, Post), do: true
 
+  def can?(%User{}, action, Post)
+    when action in [:new, :create], do: true
+
   def can?(%User{}, _, _), do: false
 end
 
@@ -68,10 +71,58 @@ defmodule CanaryTest do
     expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, [%Post{id: 1}, %Post{id: 2}])}
 
     assert load_resource(conn, opts) == expected
+
+
+    # when the action is "new"
+    params = %{}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :new}}, :get, "/posts/new", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, nil)}
+
+    assert load_resource(conn, opts) == expected
+
+
+    # when the action is "create"
+    params = %{}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :create}}, :post, "/posts/create", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, nil)}
+
+    assert load_resource(conn, opts) == expected
   end
 
   test "it authorizes the resource correctly" do
     opts = [model: Post]
+
+    # when the action is "new"
+    params = %{}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :new},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/new",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+
+
+    # when the action is "create"
+    params = %{}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :create},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/create",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+
 
     # when the action is "index"
     params = %{}
@@ -87,6 +138,7 @@ defmodule CanaryTest do
     expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
 
     assert authorize_resource(conn, opts) == expected
+
 
     # when the action is a phoenix action
     params = %{"id" => 1}

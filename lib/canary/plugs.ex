@@ -10,11 +10,18 @@ defmodule Canary.Plugs do
 
   If the action is "index", all records from the specified model will be loaded.
 
+  Currently, new and create actions are ignored, and conn.assigns.loaded_resource
+  will be set to nil for these actions.
+
   """
   def load_resource(conn, opts) do
     loaded_resource = case get_action(conn) do
       :index ->
         fetch_all(opts[:model])
+      :new ->
+        nil
+      :create ->
+        nil
       _      ->
         fetch_resource(opts[:model], conn.params["id"])
     end
@@ -31,7 +38,7 @@ defmodule Canary.Plugs do
   If authorization succeeds, assign conn.assigns.authorized to true.
   If authorization fails, assign conn.assigns.authorized to false.
 
-  For the index action, the resource in the Canada.Can implementation
+  For the "index", "new", and "create" actions, the resource in the Canada.Can implementation
   should be the module name of the model rather than a struct.
 
   For example:
@@ -46,10 +53,10 @@ defmodule Canary.Plugs do
     current_user = conn.assigns.current_user
     action = get_action(conn)
 
-    resource = case action do
-      :index ->
+    resource = cond do
+      action in [:index, :new, :create] ->
         opts[:model]
-      _      ->
+      true      ->
         fetch_resource(opts[:model], conn.params["id"])
     end
 
