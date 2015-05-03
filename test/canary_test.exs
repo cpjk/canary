@@ -3,16 +3,22 @@ defmodule User do
 end
 
 defmodule Post do
-  defstruct id: 1, user_id: 1
+  use Ecto.Model
+
+  schema "posts" do
+    field :user_id, :integer, default: 1
+  end
 end
 
 defmodule Repo do
   def get(User, 1), do: %User{}
-  def get(User, _), do: nil
+  def get(User, id), do: nil
 
-  def get(Post, 1), do: %Post{}
-  def get(Post, 2), do: %Post{user_id: 2 }
+  def get(Post, 1), do: %Post{id: 1}
+  def get(Post, 2), do: %Post{id: 2, user_id: 2 }
   def get(Post, _), do: nil
+
+  def all(_), do: [%Post{id: 1}, %Post{id: 2}]
 end
 
 defimpl Canada.Can, for: User do
@@ -21,6 +27,7 @@ defimpl Canada.Can, for: User do
 
   def can?(%User{}, _, _), do: false
 end
+
 
 defmodule CanaryTest do
   use Canary
@@ -32,6 +39,7 @@ defmodule CanaryTest do
   @moduletag timeout: 100000000
 
   Application.put_env :canary, :repo, Repo
+
 
   test "it loads the load resource correctly" do
     opts = [model: Post]
