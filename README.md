@@ -42,7 +42,7 @@ config :canary, repo: Project.Repo
 ```
 
 ####load_resource/2####
-Loads the resource with the id in ```conn.params["id"]``` from the database using the given Ecto repo and model, and assigns the resource to ```conn.assigns.fetched_resource```.
+Loads the resource with the id in ```conn.params["id"]``` from the database using the given Ecto repo and model, and assigns the resource to ```conn.assigns.loaded_resource```.
 
 For example,
 
@@ -61,7 +61,7 @@ For non-Phoenix applications, or to override the action provided by Phoenix, sim
 In order to authorize resources, you must specify permissions by implementing the [Canada.Can protocol](https://github.com/jarednorman/canada) for your ```User``` model (Canada is included as a light weight dependency).
 
 ####load_and_authorize_resource/2####
-Authorizes the resource and then loads it if authorization succeeds. Again, the resource is loaded into ```conn.assigns.fetched_resource```.
+Authorizes the resource and then loads it if authorization succeeds. Again, the resource is loaded into ```conn.assigns.loaded_resource```.
 
 In the following example, the ```User``` with the same id as the ```current_user``` is be loaded if authorization succeeds.
 
@@ -91,8 +91,8 @@ To automatically load the  ```Project.User``` with the ```id``` given in the par
 plug :load_and_authorize_resource, model: Project.User
 ```
 
-In this case, the ```Project.User``` specified by ```conn.params["id]``` is loaded into ```conn.assigns.fetched_resource``` for ```GET /users/12```, but _not_ for ```DELETE /users/12```.
+In this case, the ```Project.User``` specified by ```conn.params["id]``` is loaded into ```conn.assigns.loaded_resource``` for ```GET /users/12```, but _not_ for ```DELETE /users/12```.
 
-In this case, on ```GET /users/12``` authorization succeeds, and the ```Project.User``` specified by ```conn.params["id]``` will be loaded into ```conn.assigns.fetched_resource```.
+In this case, on ```GET /users/12``` authorization succeeds, and the ```Project.User``` specified by ```conn.params["id]``` will be loaded into ```conn.assigns.loaded_resource```.
 
 However, on ```DELETE /users/12```, authorization fails and the resource is not loaded. 
