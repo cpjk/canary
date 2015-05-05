@@ -260,4 +260,77 @@ defmodule CanaryTest do
 
     assert load_and_authorize_resource(conn, opts) == expected
   end
+
+
+  test "it correctly skips authorization for exempt actions" do
+    # when the action is exempt
+    opts = [model: Post, except: :show]
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = conn
+    assert authorize_resource(conn, opts) == expected
+
+
+    # when the action is not exempt
+    opts = [model: Post]
+    expected = %{conn | assigns: Map.put(expected.assigns, :authorized, true)}
+    assert authorize_resource(conn, opts) == expected
+  end
+
+
+  test "it correctly skips loading resources for exempt actions" do
+    # when the action is exempt
+    opts = [model: Post, except: :show]
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = conn
+    assert load_resource(conn, opts) == expected
+
+
+    # when the action is not exempt
+    opts = [model: Post]
+    expected = %{conn | assigns: Map.put(expected.assigns, :loaded_resource, %Post{id: 1, user_id: 1})}
+    assert load_resource(conn, opts) == expected
+  end
+
+
+  test "it correctly skips load_and_authorize_resource for exempt actions" do
+    # when the action is exempt
+    opts = [model: Post, except: :show]
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = conn
+    assert load_and_authorize_resource(conn, opts) == expected
+
+
+    # when the action is not exempt
+    opts = [model: Post]
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :loaded_resource, %Post{id: 1, user_id: 1})}
+    assert load_and_authorize_resource(conn, opts) == expected
+  end
 end

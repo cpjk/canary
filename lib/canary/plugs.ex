@@ -5,6 +5,7 @@ defmodule Canary.Plugs do
   @doc """
   Load the resource given by conn.params["id"] and ecto model given by
   opts[:model] into conn.assigns.loaded_resource.
+
   If the resource cannot be fetched, conn.assigns.load_resource is set
   to nil.
 
@@ -15,6 +16,15 @@ defmodule Canary.Plugs do
 
   """
   def load_resource(conn, opts) do
+    conn
+    |> action_exempt?(opts)
+    |> case do
+      true -> conn
+      false -> _load_resource(conn, opts)
+    end
+  end
+
+  defp _load_resource(conn, opts) do
     loaded_resource = case get_action(conn) do
       :index ->
         fetch_all(opts[:model])
@@ -31,6 +41,7 @@ defmodule Canary.Plugs do
 
   @doc """
   Authorize the current user for the given resource.
+
   In order to use this function,
     1) conn.assigns.current_user must be the module name of an ecto model, and
     2) conn.private must be a map.
@@ -45,11 +56,20 @@ defmodule Canary.Plugs do
     use         def can?(%User{}, :index, Post), do: true
     instead of  def can?(%User{}, :index, %Post{}), do: true
   """
-  def authorize_resource(conn = %{assigns: %{current_user: user}}, _opts) when is_nil(user) do
+  def authorize_resource(conn, opts) do
+    conn
+    |> action_exempt?(opts)
+    |> case do
+      true -> conn
+      false -> _authorize_resource(conn, opts)
+    end
+  end
+
+  defp _authorize_resource(conn = %{assigns: %{current_user: user}}, _opts) when is_nil(user) do
     %{ conn | assigns: Map.put(conn.assigns, :access_denied, true) }
   end
 
-  def authorize_resource(conn, opts) do
+  defp _authorize_resource(conn, opts) do
     current_user = conn.assigns.current_user
     action = get_action(conn)
 
@@ -83,6 +103,15 @@ defmodule Canary.Plugs do
   """
   def load_and_authorize_resource(conn, opts) do
     conn
+    |> action_exempt?(opts)
+    |> case do
+      true -> conn
+      false -> _load_and_authorize_resource(conn, opts)
+    end
+  end
+
+  defp _load_and_authorize_resource(conn, opts) do
+    conn
     |> authorize_resource(opts)
     |> load_if_authorized(opts)
   end
@@ -109,5 +138,15 @@ defmodule Canary.Plugs do
   defp load_if_authorized(conn = %{assigns: %{authorized: true} }, opts), do: load_resource(conn, opts)
   defp load_if_authorized(conn = %{assigns: %{authorized: false} }, _opts) do
     %{ conn | assigns: Map.put(conn.assigns, :loaded_resource, nil) }
+  end
+
+  defp action_exempt?(conn, opts) do
+    action = get_action(conn)
+
+    (is_list(opts[:except]) && action in opts[:except])
+    |> case do
+      true -> true
+      false -> action == opts[:except]
+    end
   end
 end
