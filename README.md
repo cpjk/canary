@@ -96,3 +96,19 @@ In this case, the ```Project.User``` specified by ```conn.params["id]``` is load
 In this case, on ```GET /users/12``` authorization succeeds, and the ```Project.User``` specified by ```conn.params["id]``` will be loaded into ```conn.assigns.loaded_resource```.
 
 However, on ```DELETE /users/12```, authorization fails and the resource is not loaded. 
+
+#### Excluding actions ####
+
+To exclude an action from any of the plugs, pass the ```except``` key, with a single action or list of actions.
+
+For example,
+
+
+Single action form:
+```elixir
+plug load_and_authorize_resource, model: Project.User, except: :show
+```
+List form:
+```elixir
+plug load_and_authorize_resource, model: Project.User, except: [:show, :create]
+```
