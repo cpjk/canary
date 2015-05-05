@@ -27,13 +27,13 @@ defmodule Canary.Plugs do
   defp _load_resource(conn, opts) do
     loaded_resource = case get_action(conn) do
       :index ->
-        fetch_all(opts[:model])
+        fetch_all(conn, opts)
       :new ->
         nil
       :create ->
         nil
       _      ->
-        fetch_resource(opts[:model], conn.params["id"])
+        fetch_resource(conn, opts)
     end
 
     %{ conn | assigns: Map.put(conn.assigns, :loaded_resource, loaded_resource) }
@@ -77,7 +77,7 @@ defmodule Canary.Plugs do
       action in [:index, :new, :create] ->
         opts[:model]
       true      ->
-        fetch_resource(opts[:model], conn.params["id"])
+        fetch_resource(conn, opts)
     end
 
     case current_user |> can? action, resource do
@@ -112,16 +112,44 @@ defmodule Canary.Plugs do
 
   defp _load_and_authorize_resource(conn, opts) do
     conn
+    |> load_resource(opts)
     |> authorize_resource(opts)
-    |> load_if_authorized(opts)
+    |> purge_resource_if_unauthorized(opts)
   end
 
-  defp fetch_resource(model, resource_id) do
-    Application.get_env(:canary, :repo).get(model, resource_id)
+  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: true} }, opts), do: conn
+  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: false} }, opts) do
+    %{ conn | assigns: Map.put(conn.assigns, :loaded_resource, nil) }
   end
 
-  defp fetch_all(model) do
-     from(m in model)
+  defp fetch_resource(conn = %{assigns: %{loaded_resource: resource}}, opts) when resource != nil do
+    (resource.__struct__ == opts[:model])
+    |> case do
+      true ->
+        resource
+      false ->
+        Application.get_env(:canary, :repo).get(opts[:model], conn.params["id"])
+    end
+  end
+
+  defp fetch_resource(conn, opts) do
+    Application.get_env(:canary, :repo).get(opts[:model], conn.params["id"])
+  end
+
+  defp fetch_all(conn = %{assigns: %{loaded_resource: resource}}, opts) do
+    (resource.__struct__ == opts[:model])
+    |> case do
+      true ->
+        resource
+      false ->
+        from(m in opts[:model])
+        |> select([m], m)
+        |> Application.get_env(:canary, :repo).all
+    end
+  end
+
+  defp fetch_all(conn, opts) do
+     from(m in opts[:model])
      |> select([m], m)
      |> Application.get_env(:canary, :repo).all
   end
@@ -133,11 +161,6 @@ defmodule Canary.Plugs do
       {:ok, action} -> action
       _             -> conn.private.phoenix_action
     end
-  end
-
-  defp load_if_authorized(conn = %{assigns: %{authorized: true} }, opts), do: load_resource(conn, opts)
-  defp load_if_authorized(conn = %{assigns: %{authorized: false} }, _opts) do
-    %{ conn | assigns: Map.put(conn.assigns, :loaded_resource, nil) }
   end
 
   defp action_exempt?(conn, opts) do
