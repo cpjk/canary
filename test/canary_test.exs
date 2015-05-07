@@ -33,6 +33,10 @@ defimpl Canada.Can, for: User do
   def can?(%User{}, _, _), do: false
 end
 
+defimpl Canada.Can, for: Atom do
+  def can?(nil, :create, Post), do: false
+end
+
 
 defmodule CanaryTest do
   use Canary
@@ -199,6 +203,22 @@ defmodule CanaryTest do
       },
       :get,
       "/posts/2",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+
+    assert authorize_resource(conn, opts) == expected
+
+
+    # when current_user is nil
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{},
+        assigns: %{current_user: nil, action: :create}
+      },
+      :post,
+      "/posts",
       params
     )
     expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}

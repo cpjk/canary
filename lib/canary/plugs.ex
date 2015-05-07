@@ -65,10 +65,6 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp _authorize_resource(conn = %{assigns: %{current_user: user}}, _opts) when is_nil(user) do
-    %{ conn | assigns: Map.put(conn.assigns, :access_denied, true) }
-  end
-
   defp _authorize_resource(conn, opts) do
     current_user = conn.assigns.current_user
     action = get_action(conn)
