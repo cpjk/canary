@@ -99,10 +99,9 @@ However, on ```DELETE /users/12```, authorization fails and the resource is not 
 
 #### Excluding actions ####
 
-To exclude an action from any of the plugs, pass the ```except``` key, with a single action or list of actions.
+To exclude an action from any of the plugs, pass the ```:except``` key, with a single action or list of actions.
 
 For example,
-
 
 Single action form:
 ```elixir
