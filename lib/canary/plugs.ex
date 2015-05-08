@@ -1,6 +1,7 @@
 defmodule Canary.Plugs do
   import Canada.Can, only: [can?: 3]
   import Ecto.Query
+  import Keyword, only: [has_key?: 2]
 
   @doc """
   Load the resource given by conn.params["id"] and ecto model given by
@@ -17,10 +18,10 @@ defmodule Canary.Plugs do
   """
   def load_resource(conn, opts) do
     conn
-    |> action_exempt?(opts)
+    |> action_valid?(opts)
     |> case do
-      true -> conn
-      false -> _load_resource(conn, opts)
+      true -> _load_resource(conn, opts)
+      false -> conn
     end
   end
 
@@ -58,10 +59,10 @@ defmodule Canary.Plugs do
   """
   def authorize_resource(conn, opts) do
     conn
-    |> action_exempt?(opts)
+    |> action_valid?(opts)
     |> case do
-      true -> conn
-      false -> _authorize_resource(conn, opts)
+      true -> _authorize_resource(conn, opts)
+      false -> conn
     end
   end
 
@@ -99,10 +100,10 @@ defmodule Canary.Plugs do
   """
   def load_and_authorize_resource(conn, opts) do
     conn
-    |> action_exempt?(opts)
+    |> action_valid?(opts)
     |> case do
-      true -> conn
-      false -> _load_and_authorize_resource(conn, opts)
+      true -> _load_and_authorize_resource(conn, opts)
+      false -> conn
     end
   end
 
@@ -166,6 +167,29 @@ defmodule Canary.Plugs do
     |> case do
       true -> true
       false -> action == opts[:except]
+    end
+  end
+
+  defp action_included?(conn, opts) do
+    action = get_action(conn)
+
+    (is_list(opts[:only]) && action in opts[:only])
+    |> case do
+      true -> true
+      false -> action == opts[:only]
+    end
+  end
+
+  defp action_valid?(conn, opts) do
+    cond do
+      has_key?(opts, :except) && has_key?(opts, :only) ->
+        false
+      has_key?(opts, :except) ->
+        !action_exempt?(conn, opts)
+      has_key?(opts, :only) ->
+        action_included?(conn, opts)
+      true ->
+        true
     end
   end
 end

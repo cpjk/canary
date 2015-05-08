@@ -282,6 +282,166 @@ defmodule CanaryTest do
   end
 
 
+  test "it only loads the resource when the action is in opts[:only]" do
+    # when the action is in opts[:only]
+    opts = [model: Post, only: :show]
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, %Post{id: 1})}
+
+    assert load_resource(conn, opts) == expected
+
+
+    # when the action is not opts[:only]
+    opts = [model: Post, only: :other]
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = conn
+
+    assert load_resource(conn, opts) == expected
+  end
+
+
+  test "it only authorizes actions in opts[:only]" do
+    # when the action is in opts[:only]
+    opts = [model: Post, only: :show]
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    assert authorize_resource(conn, opts) == expected
+
+
+    # when the action is not opts[:only]
+    opts = [model: Post, only: :other]
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = conn
+
+    assert authorize_resource(conn, opts) == expected
+  end
+
+
+  test "it only loads and authorizes the resource for actions in opts[:only]" do
+    # when the action is in opts[:only]
+    opts = [model: Post, only: :show]
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = %{conn | assigns: Map.put(expected.assigns, :loaded_resource, %Post{id: 1, user_id: 1})}
+
+    assert load_and_authorize_resource(conn, opts) == expected
+
+
+    # when the action is not opts[:only]
+    opts = [model: Post, only: :other]
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = conn
+
+    assert load_and_authorize_resource(conn, opts) == expected
+  end
+
+
+  test "it skips the plug when both opts[:only] and opts[:except] are specified" do
+    # when the plug is load_resource
+    opts = [model: Post, only: :show, except: :index]
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = conn
+
+    assert load_resource(conn, opts) == expected
+
+
+    # when the plug is authorize_resource
+    opts = [model: Post, only: :show, except: :index]
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = conn
+
+    assert authorize_resource(conn, opts) == expected
+
+
+    # when the plug is load_and_authorize_resource
+    opts = [model: Post, only: :show, except: :index]
+    params = %{"id" => 1}
+    conn = conn(
+    %Plug.Conn{
+      private: %{phoenix_action: :show},
+      assigns: %{current_user: %User{id: 1}}
+    },
+    :get,
+    "/posts/1",
+    params
+    )
+    expected = conn
+
+    assert load_and_authorize_resource(conn, opts) == expected
+  end
+
   test "it correctly skips authorization for exempt actions" do
     # when the action is exempt
     opts = [model: Post, except: :show]
@@ -296,12 +456,14 @@ defmodule CanaryTest do
       params
     )
     expected = conn
+
     assert authorize_resource(conn, opts) == expected
 
 
     # when the action is not exempt
     opts = [model: Post]
     expected = %{conn | assigns: Map.put(expected.assigns, :authorized, true)}
+
     assert authorize_resource(conn, opts) == expected
   end
 

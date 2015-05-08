@@ -112,3 +112,20 @@ List form:
 ```elixir
 plug load_and_authorize_resource, model: Project.User, except: [:show, :create]
 ```
+
+#### Authorizing only specific actions ####
+
+To specify that a plug should be run only for a specific list of actions, pass the ```:only``` key, with a single action or list of actions.
+
+For example,
+
+Single action form:
+```elixir
+plug load_and_authorize_resource, model: Project.User, only: :show
+```
+List form:
+```elixir
+plug load_and_authorize_resource, model: Project.User, only: [:show, :create]
+```
+
+Note: Passing both ```:only``` and ```:except``` to a plug is invalid. Currently, the plug will simply pass the ```Conn``` along unchanged.
