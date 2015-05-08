@@ -3,12 +3,12 @@ defmodule Canary.Mixfile do
 
   def project do
     [app: :canary,
-     version: "0.5.1",
+     version: "0.6.0",
      elixir: "~> 1.0",
      package: package,
      description: """
      An authorization library to restrict what resources the current user is
-     allowed to access.
+     allowed to access, and load resources for you.
      """,
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
