@@ -20,20 +20,20 @@ defmodule Canary.Plugs do
     conn
     |> action_valid?(opts)
     |> case do
-      true -> _load_resource(conn, opts)
+      true  -> _load_resource(conn, opts)
       false -> conn
     end
   end
 
   defp _load_resource(conn, opts) do
     loaded_resource = case get_action(conn) do
-      :index ->
+      :index  ->
         fetch_all(conn, opts)
-      :new ->
+      :new    ->
         nil
       :create ->
         nil
-      _      ->
+      _       ->
         fetch_resource(conn, opts)
     end
 
@@ -61,7 +61,7 @@ defmodule Canary.Plugs do
     conn
     |> action_valid?(opts)
     |> case do
-      true -> _authorize_resource(conn, opts)
+      true  -> _authorize_resource(conn, opts)
       false -> conn
     end
   end
@@ -78,7 +78,7 @@ defmodule Canary.Plugs do
     end
 
     case current_user |> can? action, resource do
-      true ->
+      true  ->
         %{ conn | assigns: Map.put(conn.assigns, :authorized, true) }
       false ->
         %{ conn | assigns: Map.put(conn.assigns, :authorized, false) }
@@ -102,7 +102,7 @@ defmodule Canary.Plugs do
     conn
     |> action_valid?(opts)
     |> case do
-      true -> _load_and_authorize_resource(conn, opts)
+      true  -> _load_and_authorize_resource(conn, opts)
       false -> conn
     end
   end
@@ -122,7 +122,7 @@ defmodule Canary.Plugs do
   defp fetch_resource(conn = %{assigns: %{loaded_resource: resource}}, opts) when resource != nil do
     (resource.__struct__ == opts[:model])
     |> case do
-      true ->
+      true  ->
         resource
       false ->
         Application.get_env(:canary, :repo).get(opts[:model], conn.params["id"])
@@ -136,7 +136,7 @@ defmodule Canary.Plugs do
   defp fetch_all(conn = %{assigns: %{loaded_resource: resource}}, opts) do
     (resource.__struct__ == opts[:model])
     |> case do
-      true ->
+      true  ->
         resource
       false ->
         from(m in opts[:model])
@@ -165,7 +165,7 @@ defmodule Canary.Plugs do
 
     (is_list(opts[:except]) && action in opts[:except])
     |> case do
-      true -> true
+      true  -> true
       false -> action == opts[:except]
     end
   end
@@ -175,7 +175,7 @@ defmodule Canary.Plugs do
 
     (is_list(opts[:only]) && action in opts[:only])
     |> case do
-      true -> true
+      true  -> true
       false -> action == opts[:only]
     end
   end
