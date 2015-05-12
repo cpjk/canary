@@ -42,14 +42,14 @@ config :canary, repo: Project.Repo
 ```
 
 ####load_resource/2####
-Loads the resource with the id in ```conn.params["id"]``` from the database using the given Ecto repo and model, and assigns the resource to ```conn.assigns.loaded_resource```.
+Loads the resource having the id given in ```conn.params["id"]``` from the database using the given Ecto repo and model, and assigns the resource to ```conn.assigns.loaded_resource```.
 
 For example,
 
 ```elixir
 plug :load_resource, model: Project.User
 ```
-Will load the ```Project.User``` with id given in the ```conn.params["id"]``` through ```Project.Repo```.
+Will load the ```Project.User``` having the id given in ```conn.params["id"]``` through ```Project.Repo```.
 
 ####authorize_resource/2####
 Checks whether or not the ```current_user``` can perform the given action on the given resource and assigns the result (true/false) to ```conn.assigns.authorized```. It is up to you to decide what to do with the result.
@@ -63,7 +63,7 @@ In order to authorize resources, you must specify permissions by implementing th
 ####load_and_authorize_resource/2####
 Authorizes the resource and then loads it if authorization succeeds. Again, the resource is loaded into ```conn.assigns.loaded_resource```.
 
-In the following example, the ```User``` with the same id as the ```current_user``` is be loaded if authorization succeeds.
+In the following example, the ```User``` with the same id as the ```current_user``` is only loaded if authorization succeeds.
 
 ####Example####
 Let's say you have a Phoenix application with a ```User``` model, and you want to authorize the ```current_user``` for accessing ```User``` resources.
@@ -85,7 +85,7 @@ get "/users/:id", UserController, :show
 delete "/users/:id", UserController, :delete
 ```
 
-To automatically load the  ```Project.User``` with the ```id``` given in the params, you would plug your ```UserController``` like so:
+To automatically load and authorize the  ```Project.User``` having the ```id``` given in the params, you would plug your ```UserController``` like so:
 
 ```elixir
 plug :load_and_authorize_resource, model: Project.User
