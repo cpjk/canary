@@ -2,7 +2,7 @@ Canary
 ======
 
 An authorization library for Elixir applications that restricts what resources
-the current user is allowed to access.
+the current user is allowed to access, and automatically loads resources for the current request.
 
 Inspired by [CanCan](https://github.com/CanCanCommunity/cancancan) for Ruby on Rails.
 
