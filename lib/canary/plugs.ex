@@ -44,7 +44,7 @@ defmodule Canary.Plugs do
   Authorize the current user for the given resource.
 
   In order to use this function,
-    1) conn.assigns.current_user must be the module name of an ecto model, and
+    1) conn.assigns.current_user must be an ecto struct representing the current user
     2) conn.private must be a map.
 
   If authorization succeeds, assign conn.assigns.authorized to true.
