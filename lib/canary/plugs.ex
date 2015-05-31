@@ -114,8 +114,8 @@ defmodule Canary.Plugs do
     |> purge_resource_if_unauthorized(opts)
   end
 
-  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: true} }, opts), do: conn
-  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: false} }, opts) do
+  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: true} }, _opts), do: conn
+  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: false} }, _opts) do
     %{ conn | assigns: Map.put(conn.assigns, :loaded_resource, nil) }
   end
 
@@ -133,7 +133,7 @@ defmodule Canary.Plugs do
     Application.get_env(:canary, :repo).get(opts[:model], conn.params["id"])
   end
 
-  defp fetch_all(conn = %{assigns: %{loaded_resource: resource}}, opts) do
+  defp fetch_all(%{assigns: %{loaded_resource: resource}}, opts) do
     (resource.__struct__ == opts[:model])
     |> case do
       true  ->
@@ -145,7 +145,7 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp fetch_all(conn, opts) do
+  defp fetch_all(_conn, opts) do
      from(m in opts[:model])
      |> select([m], m)
      |> Application.get_env(:canary, :repo).all
