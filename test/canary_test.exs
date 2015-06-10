@@ -12,7 +12,7 @@ end
 
 defmodule Repo do
   def get(User, 1), do: %User{}
-  def get(User, id), do: nil
+  def get(User, _id), do: nil
 
   def get(Post, 1), do: %Post{id: 1}
   def get(Post, 2), do: %Post{id: 2, user_id: 2 }
