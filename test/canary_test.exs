@@ -515,4 +515,70 @@ defmodule CanaryTest do
     expected = %{expected | assigns: Map.put(expected.assigns, :loaded_resource, %Post{id: 1, user_id: 1})}
     assert load_and_authorize_resource(conn, opts) == expected
   end
+
+  defmodule CurrentUser do
+    use ExUnit.Case, async: true
+
+    defmodule ApplicationConfig do
+      use ExUnit.Case, async: false
+      import Mock
+
+      test_with_mock "it uses the current_user name configured", Application, [:passthrough], [
+        get_env: fn(_,_,_)-> :current_admin end
+        ] do
+        # when the user configured with opts
+        opts = [model: Post, except: :show]
+        params = %{"id" => 1}
+        conn = conn(
+          %Plug.Conn{
+            private: %{phoenix_action: :show},
+            assigns: %{current_admin: %User{id: 1}}
+          },
+          :get,
+          "/posts/1",
+          params
+        )
+        expected = conn
+
+        assert authorize_resource(conn, opts) == expected
+      end
+    end
+
+    test "it uses the current_user name in options" do
+      # when the user configured with opts
+      opts = [model: Post, current_user: :user]
+      params = %{"id" => 1}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :show},
+          assigns: %{user: %User{id: 1}, authorized: true}
+        },
+        :get,
+        "/posts/1",
+        params
+      )
+      expected = conn
+
+      assert authorize_resource(conn, opts) == expected
+    end
+
+    test "it throws an error when the wrong current_user name is used" do
+      # when the user configured with opts
+      opts = [model: Post, current_user: :configured_current_user]
+      params = %{"id" => 1}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :show},
+          assigns: %{user: %User{id: 1}, authorized: true}
+        },
+        :get,
+        "/posts/1",
+        params
+      )
+
+      assert_raise KeyError, "key :configured_current_user not found in: %{authorized: true, user: %User{id: 1}}", fn->
+        authorize_resource(conn, opts)
+      end
+    end
+  end
 end

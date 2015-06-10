@@ -44,7 +44,8 @@ defmodule Canary.Plugs do
   Authorize the current user for the given resource.
 
   In order to use this function,
-    1) conn.assigns.current_user must be an ecto struct representing the current user
+    1) conn.assigns[Application.get_env(:canary, :current_user, :current_user)] must be an ecto
+      struct representing the current user
     2) conn.private must be a map.
 
   If authorization succeeds, assign conn.assigns.authorized to true.
@@ -67,7 +68,8 @@ defmodule Canary.Plugs do
   end
 
   defp _authorize_resource(conn, opts) do
-    current_user = conn.assigns.current_user
+    current_user_name = opts[:current_user] || Application.get_env(:canary, :current_user, :current_user)
+    current_user = Dict.fetch! conn.assigns, current_user_name
     action = get_action(conn)
 
     resource = cond do
