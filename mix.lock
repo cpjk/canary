@@ -3,5 +3,7 @@
   "earmark": {:hex, :earmark, "0.1.17"},
   "ecto": {:hex, :ecto, "0.12.0-rc"},
   "ex_doc": {:hex, :ex_doc, "0.7.3"},
+  "meck": {:hex, :meck, "0.8.2"},
+  "mock": {:hex, :mock, "0.1.1"},
   "plug": {:hex, :plug, "0.13.0"},
   "poolboy": {:hex, :poolboy, "1.5.1"}}
