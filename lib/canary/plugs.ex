@@ -45,7 +45,7 @@ defmodule Canary.Plugs do
 
   In order to use this function,
     1) conn.assigns[Application.get_env(:canary, :current_user, :current_user)] must be an ecto
-      struct representing the current user
+    struct representing the current user
     2) conn.private must be a map.
 
   If authorization succeeds, assign conn.assigns.authorized to true.
