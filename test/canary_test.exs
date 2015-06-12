@@ -516,6 +516,62 @@ defmodule CanaryTest do
     assert load_and_authorize_resource(conn, opts) == expected
   end
 
+
+  test "it loads the resource into a key specified by the :as option" do
+    opts = [model: Post, as: :post]
+
+    # when the resource with the id can be fetched
+    params = %{"id" => 1}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
+
+    assert load_resource(conn, opts) == expected
+  end
+
+
+  test "it authorizes the resource correctly when the :as key is specified" do
+    opts = [model: Post, as: :post]
+
+    # when the action is "new"
+    params = %{}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :new},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/new",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+    # need to check that it works for authorization as well, and for load_and_authorize_resource
+  end
+
+
+  test "it loads and authorizes the resource correctly when the :as key is specified" do
+    opts = [model: Post, as: :post]
+
+    # when the current user can access the given resource
+    # and the resource can be loaded
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 1, user_id: 1})}
+
+    assert load_and_authorize_resource(conn, opts) == expected
+  end
+
+
   defmodule CurrentUser do
     use ExUnit.Case, async: true
 
