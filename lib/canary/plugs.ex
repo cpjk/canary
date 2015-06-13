@@ -4,10 +4,16 @@ defmodule Canary.Plugs do
   import Keyword, only: [has_key?: 2]
 
   @doc """
-  Load the resource given by conn.params["id"] and ecto model given by
-  opts[:model] into conn.assigns.loaded_resource.
+  Load the resource with id given by  conn.params["id"] and ecto model given by
+  opts[:model] into conn.assigns.<resource_name>, where resource_name is
+  either inferred from the model name or specified in the plug declaration with the ":as" key.
+  To infer the resource_name, the most specific(right most) name in the model's
+  module name will be used, converted to underscore case.
 
-  If the resource cannot be fetched, conn.assigns.load_resource is set
+  For example, `load_resource model: Some.Project.BlogPost` will load the resource into
+  conn.assigns.blog_post
+
+  If the resource cannot be fetched, conn.assigns.<resource_name> is set
   to nil.
 
   If the action is "index", all records from the specified model will be loaded.
@@ -37,7 +43,7 @@ defmodule Canary.Plugs do
         fetch_resource(conn, opts)
     end
 
-    %{ conn | assigns: Map.put(conn.assigns, resource_name(opts), loaded_resource) }
+    %{ conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), loaded_resource) }
   end
 
   @doc """
@@ -118,18 +124,18 @@ defmodule Canary.Plugs do
 
   defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: true} }, _opts), do: conn
   defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: false} }, opts) do
-    %{ conn | assigns: Map.put(conn.assigns, resource_name(opts), nil) }
+    %{ conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), nil) }
   end
 
   defp fetch_resource(conn, opts) do
     conn
-    |> Map.fetch(resource_name(opts))
+    |> Map.fetch(resource_name(conn, opts))
     |> case do
       :error ->
         Application.get_env(:canary, :repo).get(opts[:model], conn.params["id"])
       {:ok, nil} ->
         Application.get_env(:canary, :repo).get(opts[:model], conn.params["id"])
-      {:ok, resource} -># if there is already a resource loaded onto the conn
+      {:ok, resource} -> # if there is already a resource loaded onto the conn
         case (resource.__struct__ == opts[:model]) do
           true  ->
             resource
@@ -141,7 +147,7 @@ defmodule Canary.Plugs do
 
   defp fetch_all(conn, opts) do
     conn
-    |> Map.fetch(resource_name(opts))
+    |> Map.fetch(resource_name(conn, opts))
     |> case do
       :error ->
         from(m in opts[:model]) |> select([m], m) |> Application.get_env(:canary, :repo).all
@@ -197,7 +203,24 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp resource_name(opts) do
-    opts[:as] || :loaded_resource
+  defp resource_name(conn, opts) do
+    case opts[:as] do
+      nil ->
+        opts[:model]
+        |> Atom.to_string
+        |> String.split(".")
+        |> List.last
+        |> Mix.Utils.underscore
+        |> pluralize_if_needed(conn)
+        |> String.to_atom
+      as -> as
+    end
+  end
+
+  defp pluralize_if_needed(name, conn) do
+    case get_action(conn) in [:index] do
+      true -> name <> "s"
+      _    -> name
+    end
   end
 end

@@ -56,7 +56,7 @@ defmodule CanaryTest do
     # when the resource with the id can be fetched
     params = %{"id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, %Post{id: 1})}
+    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
 
     assert load_resource(conn, opts) == expected
 
@@ -64,7 +64,7 @@ defmodule CanaryTest do
     # when the resource with the id cannot be fetched
     params = %{"id" => 3}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/3", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, nil)}
+    expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
 
     assert load_resource(conn, opts) == expected
 
@@ -72,7 +72,7 @@ defmodule CanaryTest do
     # when the action is "index"
     params = %{}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :index}}, :get, "/posts", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, [%Post{id: 1}, %Post{id: 2}])}
+    expected = %{conn | assigns: Map.put(conn.assigns, :posts, [%Post{id: 1}, %Post{id: 2}])}
 
     assert load_resource(conn, opts) == expected
 
@@ -80,7 +80,7 @@ defmodule CanaryTest do
     # when the action is "new"
     params = %{}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :new}}, :get, "/posts/new", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, nil)}
+    expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
 
     assert load_resource(conn, opts) == expected
 
@@ -88,7 +88,7 @@ defmodule CanaryTest do
     # when the action is "create"
     params = %{}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :create}}, :post, "/posts/create", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, nil)}
+    expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
 
     assert load_resource(conn, opts) == expected
   end
@@ -242,7 +242,7 @@ defmodule CanaryTest do
       params
     )
     expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :loaded_resource, %Post{id: 1, user_id: 1})}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 1, user_id: 1})}
 
     assert load_and_authorize_resource(conn, opts) == expected
 
@@ -259,7 +259,7 @@ defmodule CanaryTest do
       params
     )
     expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :loaded_resource, nil)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
 
     assert load_and_authorize_resource(conn, opts) == expected
 
@@ -276,7 +276,7 @@ defmodule CanaryTest do
       params
     )
     expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :loaded_resource, nil)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
 
     assert load_and_authorize_resource(conn, opts) == expected
   end
@@ -295,7 +295,7 @@ defmodule CanaryTest do
       "/posts/1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :loaded_resource, %Post{id: 1})}
+    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
 
     assert load_resource(conn, opts) == expected
 
@@ -367,7 +367,7 @@ defmodule CanaryTest do
       params
     )
     expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{conn | assigns: Map.put(expected.assigns, :loaded_resource, %Post{id: 1, user_id: 1})}
+    expected = %{conn | assigns: Map.put(expected.assigns, :post, %Post{id: 1, user_id: 1})}
 
     assert load_and_authorize_resource(conn, opts) == expected
 
@@ -487,7 +487,7 @@ defmodule CanaryTest do
 
     # when the action is not exempt
     opts = [model: Post]
-    expected = %{conn | assigns: Map.put(expected.assigns, :loaded_resource, %Post{id: 1, user_id: 1})}
+    expected = %{conn | assigns: Map.put(expected.assigns, :post, %Post{id: 1, user_id: 1})}
     assert load_resource(conn, opts) == expected
   end
 
@@ -512,25 +512,25 @@ defmodule CanaryTest do
     # when the action is not exempt
     opts = [model: Post]
     expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :loaded_resource, %Post{id: 1, user_id: 1})}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 1, user_id: 1})}
     assert load_and_authorize_resource(conn, opts) == expected
   end
 
 
   test "it loads the resource into a key specified by the :as option" do
-    opts = [model: Post, as: :post]
+    opts = [model: Post, as: :some_key]
 
     # when the resource with the id can be fetched
     params = %{"id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
+    expected = %{conn | assigns: Map.put(conn.assigns, :some_key, %Post{id: 1})}
 
     assert load_resource(conn, opts) == expected
   end
 
 
   test "it authorizes the resource correctly when the :as key is specified" do
-    opts = [model: Post, as: :post]
+    opts = [model: Post, as: :some_key]
 
     # when the action is "new"
     params = %{}
@@ -551,7 +551,7 @@ defmodule CanaryTest do
 
 
   test "it loads and authorizes the resource correctly when the :as key is specified" do
-    opts = [model: Post, as: :post]
+    opts = [model: Post, as: :some_key]
 
     # when the current user can access the given resource
     # and the resource can be loaded
@@ -566,9 +566,21 @@ defmodule CanaryTest do
       params
     )
     expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 1, user_id: 1})}
+    expected = %{expected | assigns: Map.put(expected.assigns, :some_key, %Post{id: 1, user_id: 1})}
 
     assert load_and_authorize_resource(conn, opts) == expected
+  end
+
+
+  test "when the :as key is not specified, it loads the resource into a key inferred from the model name" do
+    opts = [model: Post]
+
+    # when the resource with the id can be fetched
+    params = %{"id" => 1}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
+
+    assert load_resource(conn, opts) == expected
   end
 
 

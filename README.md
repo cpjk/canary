@@ -42,14 +42,15 @@ config :canary, repo: Project.Repo,
 ```
 
 ####load_resource/2####
-Loads the resource having the id given in ```conn.params["id"]``` from the database using the given Ecto repo and model, and assigns the resource to ```conn.assigns.loaded_resource```.
+Loads the resource having the id given in ```conn.params["id"]``` from the database using the given Ecto repo and model, and assigns the resource to ```conn.assigns.<resource_name>```, where `resource_name` is inferred from the model name.
 
 For example,
 
 ```elixir
 plug :load_resource, model: Project.User
 ```
-Will load the ```Project.User``` having the id given in ```conn.params["id"]``` through ```Project.Repo```.
+Will load the ```Project.User``` having the id given in ```conn.params["id"]``` through ```Project.Repo```, into
+`conn.assigns.user`
 
 ####authorize_resource/2####
 Checks whether or not the ```current_user``` can perform the given action on the given resource and assigns the result (true/false) to ```conn.assigns.authorized```. It is up to you to decide what to do with the result.
@@ -61,7 +62,7 @@ For non-Phoenix applications, or to override the action provided by Phoenix, sim
 In order to authorize resources, you must specify permissions by implementing the [Canada.Can protocol](https://github.com/jarednorman/canada) for your ```User``` model (Canada is included as a light weight dependency).
 
 ####load_and_authorize_resource/2####
-Authorizes the resource and then loads it if authorization succeeds. Again, the resource is loaded into ```conn.assigns.loaded_resource```.
+Authorizes the resource and then loads it if authorization succeeds. Again, the resource is loaded into ```conn.assigns.<resource_name>```.
 
 In the following example, the ```User``` with the same id as the ```current_user``` is only loaded if authorization succeeds.
 
@@ -91,9 +92,9 @@ To automatically load and authorize the  ```Project.User``` having the ```id``` 
 plug :load_and_authorize_resource, model: Project.User
 ```
 
-In this case, the ```Project.User``` specified by ```conn.params["id]``` is loaded into ```conn.assigns.loaded_resource``` for ```GET /users/12```, but _not_ for ```DELETE /users/12```.
+In this case, the ```Project.User``` specified by ```conn.params["id]``` is loaded into ```conn.assigns.user``` for ```GET /users/12```, but _not_ for ```DELETE /users/12```.
 
-In this case, on ```GET /users/12``` authorization succeeds, and the ```Project.User``` specified by ```conn.params["id]``` will be loaded into ```conn.assigns.loaded_resource```.
+In this case, on ```GET /users/12``` authorization succeeds, and the ```Project.User``` specified by ```conn.params["id]``` will be loaded into ```conn.assigns.user```.
 
 However, on ```DELETE /users/12```, authorization fails and the resource is not loaded.
 
@@ -141,3 +142,13 @@ The current user can also be overridden for individual plugs as follows:
 ```elixir
 plug load_and_authorize_resource, model: Project.User, current_user: :current_admin
 ```
+
+#### Specifying resource_name
+
+To specify the name under which the loaded resource is stored, pass the `:as` flag in the plug declaration.
+
+For example,
+```elixir
+plug :load_and_authorize_resource, model: Project.Post, as: :new_post
+```
+will load the post into `conn.assigns.new_post`
