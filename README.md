@@ -106,11 +106,11 @@ For example,
 
 Single action form:
 ```elixir
-plug load_and_authorize_resource, model: Project.User, except: :show
+plug :load_and_authorize_resource, model: Project.User, except: :show
 ```
 List form:
 ```elixir
-plug load_and_authorize_resource, model: Project.User, except: [:show, :create]
+plug :load_and_authorize_resource, model: Project.User, except: [:show, :create]
 ```
 
 #### Authorizing only specific actions ####
@@ -121,11 +121,11 @@ For example,
 
 Single action form:
 ```elixir
-plug load_and_authorize_resource, model: Project.User, only: :show
+plug :load_and_authorize_resource, model: Project.User, only: :show
 ```
 List form:
 ```elixir
-plug load_and_authorize_resource, model: Project.User, only: [:show, :create]
+plug :load_and_authorize_resource, model: Project.User, only: [:show, :create]
 ```
 
 Note: Passing both ```:only``` and ```:except``` to a plug is invalid. Currently, the plug will simply pass the ```Conn``` along unchanged.
@@ -140,7 +140,7 @@ In this case, canary will look for the current user record in ```conn.assigns.so
 
 The current user can also be overridden for individual plugs as follows:
 ```elixir
-plug load_and_authorize_resource, model: Project.User, current_user: :current_admin
+plug :load_and_authorize_resource, model: Project.User, current_user: :current_admin
 ```
 
 #### Specifying resource_name
