@@ -5,7 +5,7 @@ defmodule Canary.Plugs do
 
   @doc """
   Load the resource with id given by  conn.params["id"] and ecto model given by
-  opts[:model] into conn.assigns.<resource_name>, where resource_name is
+  opts[:model] into conn.assigns.resource_name, where resource_name is
   either inferred from the model name or specified in the plug declaration with the ":as" key.
   To infer the resource_name, the most specific(right most) name in the model's
   module name will be used, converted to underscore case.
@@ -13,7 +13,7 @@ defmodule Canary.Plugs do
   For example, `load_resource model: Some.Project.BlogPost` will load the resource into
   conn.assigns.blog_post
 
-  If the resource cannot be fetched, conn.assigns.<resource_name> is set
+  If the resource cannot be fetched, conn.assigns.resource_name is set
   to nil.
 
   If the action is "index", all records from the specified model will be loaded.
