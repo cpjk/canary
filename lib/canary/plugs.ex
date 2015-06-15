@@ -207,8 +207,7 @@ defmodule Canary.Plugs do
     case opts[:as] do
       nil ->
         opts[:model]
-        |> Atom.to_string
-        |> String.split(".")
+        |> Module.split
         |> List.last
         |> Mix.Utils.underscore
         |> pluralize_if_needed(conn)
