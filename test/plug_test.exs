@@ -38,7 +38,7 @@ defimpl Canada.Can, for: Atom do
 end
 
 
-defmodule CanaryTest do
+defmodule PlugTest do
   use Canary
 
   import Plug.Adapters.Test.Conn, only: [conn: 4]
