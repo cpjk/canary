@@ -43,7 +43,7 @@ defmodule Canary.Plugs do
         fetch_resource(conn, opts)
     end
 
-    %{ conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), loaded_resource) }
+    %{conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), loaded_resource)}
   end
 
   @doc """
@@ -87,9 +87,9 @@ defmodule Canary.Plugs do
 
     case current_user |> can? action, resource do
       true  ->
-        %{ conn | assigns: Map.put(conn.assigns, :authorized, true) }
+        %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
       false ->
-        %{ conn | assigns: Map.put(conn.assigns, :authorized, false) }
+        %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
     end
   end
 
@@ -122,9 +122,9 @@ defmodule Canary.Plugs do
     |> purge_resource_if_unauthorized(opts)
   end
 
-  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: true} }, _opts), do: conn
-  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: false} }, opts) do
-    %{ conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), nil) }
+  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: true}}, _opts), do: conn
+  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: false}}, opts) do
+    %{conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), nil)}
   end
 
   defp fetch_resource(conn, opts) do
