@@ -11,10 +11,10 @@ For the latest master:
 
 ```elixir
 defp deps do
-  {:canary, github: "cpjk/canary"}
+  {:canary, github: "Fabi755/canary"}
 end
 ```
-
+<!--
 For the latest release:
 
 ```elixir
@@ -22,6 +22,7 @@ defp deps do
   {:canary, "~> 0.8.0"}
 end
 ```
+-->
 
 Then run ```mix deps.get``` to fetch the dependencies.
 
