@@ -157,14 +157,14 @@ defmodule Canary.Plugs do
     |> case do
       :error ->
         repo = Application.get_env(:canary, :repo)
-        from(m in opts[:model]) |> select([m], m) |> repo.get_env(:canary, :repo).all |> repo.preload(opts[:preload])
+        from(m in opts[:model]) |> select([m], m) |> repo.all |> repo.preload(opts[:preload])
       {:ok, resource} ->
         case (resource.__struct__ == opts[:model]) do
           true  ->
             resource
           false ->
             repo = Application.get_env(:canary, :repo)
-            from(m in opts[:model]) |> select([m], m) |> repo.get_env(:canary, :repo).all |> repo.preload(opts[:preload])
+            from(m in opts[:model]) |> select([m], m) |> repo.all |> repo.preload(opts[:preload])
         end
     end
   end
