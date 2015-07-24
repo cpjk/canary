@@ -26,7 +26,6 @@ defmodule Repo do
   def preload(%Post{id: 2, user_id: 2}, :user), do: %Post{id: 2, user_id: 2, user: %User{id: 2}}
   def preload([%Post{id: 1},  %Post{id: 2, user_id: 2}], :user), do: [%Post{id: 1}, %Post{id: 2, user_id: 2, user: %User{id: 2}}]
   def preload(resources, _), do: resources
-
 end
 
 defimpl Canada.Can, for: User do
@@ -61,7 +60,7 @@ defmodule PlugTest do
 
   Application.put_env :canary, :repo, Repo
 
-  test "it loads the load resource correctly" do
+  test "it loads the resource correctly" do
     opts = [model: Post]
 
     # when the resource with the id can be fetched
@@ -664,7 +663,7 @@ defmodule PlugTest do
   defmodule Preload do
     use ExUnit.Case, async: true
   
-    test "it loads the load resource correctly when the :preload key is specified" do
+    test "it loads the resource correctly when the :preload key is specified" do
       opts = [model: Post, preload: :user]
 
       # when the resource with the id can be fetched and the association exists
@@ -675,7 +674,7 @@ defmodule PlugTest do
       assert load_resource(conn, opts) == expected
 
 
-      # when the resource with the id can be fetched and the association not exists
+      # when the resource with the id can be fetched and the association does not exists
       params = %{"id" => 1}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
       expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1, user_id: 1})}
@@ -765,7 +764,7 @@ defmodule PlugTest do
 
 
       # when the current user can access the given resource
-      # and the resource can be loaded and the association not exists
+      # and the resource can be loaded and the association does not exists
       params = %{"id" => 1}
       conn = conn(
         %Plug.Conn{
@@ -799,5 +798,4 @@ defmodule PlugTest do
       assert load_and_authorize_resource(conn, opts) == expected
     end
   end
-
 end
