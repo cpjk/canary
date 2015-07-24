@@ -3,23 +3,62 @@ defmodule Canary.Plugs do
   import Ecto.Query
   import Keyword, only: [has_key?: 2]
 
+  @moduledoc """
+  Plug functions for loading and authorizing resources for the current request.
+
+  Plugs all store data in conn.assigns (in Phoenix applications, keys in conn.assigns can be accessed with `@key_name` in both views and controllers)
+
+  In order to use the plug functions, you must `use Canary`.
+
+  You must also specify the Ecto repo to use in your configuration:
+  ```
+  config :canary, repo: Project.Repo
+  ```
+  If you wish, you may also specify the key where Canary will look for the current user record to authorize against:
+  ```
+  config :canary, current_user: :some_current_user
+  ```
+  """
+
   @doc """
-  Load the resource with id given by  conn.params["id"] and ecto model given by
-  opts[:model] into conn.assigns.resource_name, where resource_name is
-  either inferred from the model name or specified in the plug declaration with the ":as" key.
-  To infer the resource_name, the most specific(right most) name in the model's
+  Load the given resource.
+
+  Load the resource with id given by `conn.params["id"]` and ecto model given by
+  opts[:model] into `conn.assigns.resource_name`.
+
+  `resource_name` is either inferred from the model name or specified in the plug declaration with the `:as` key.
+  To infer the `resource_name`, the most specific(right most) name in the model's
   module name will be used, converted to underscore case.
 
   For example, `load_resource model: Some.Project.BlogPost` will load the resource into
-  conn.assigns.blog_post
+  `conn.assigns.blog_post`
 
-  If the resource cannot be fetched, conn.assigns.resource_name is set
+  If the resource cannot be fetched, `conn.assigns.resource_name` is set
   to nil.
 
-  If the action is "index", all records from the specified model will be loaded.
+  If the action is `:index`, all records from the specified model will be loaded.
 
-  Currently, new and create actions are ignored, and conn.assigns.loaded_resource
+  Currently, `:new` and `:create` actions are ignored, and `conn.assigns.resource_name`
   will be set to nil for these actions.
+
+  Required opts:
+
+  * `:model` - Specifies the module name of the model to load resources from
+
+  Optional opts:
+
+  * `:as` - Specifies the `resource_name` to use
+  * `:only` - Specifies which actions to authorize
+  * `:except` - Specifies which actions for which to skip authorization
+  * `:preload` - Specifies association(s) to preload
+
+  Examples:
+  ```
+  plug :load_resource, model: Post
+  plug :load_resource, model: User, preload: :posts, as: :the_user
+  plug :load_resource, model: User, only: [:index, :show], preload: :posts, as: :person
+  plug :load_resource, model: User, except: [:destroy]
+  ```
 
   """
   def load_resource(conn, opts) do
@@ -50,19 +89,46 @@ defmodule Canary.Plugs do
   Authorize the current user for the given resource.
 
   In order to use this function,
-    1) conn.assigns[Application.get_env(:canary, :current_user, :current_user)] must be an ecto
+
+    1) `conn.assigns[Application.get_env(:canary, :current_user, :current_user)]` must be an ecto
     struct representing the current user
-    2) conn.private must be a map.
 
-  If authorization succeeds, assign conn.assigns.authorized to true.
-  If authorization fails, assign conn.assigns.authorized to false.
+    2) `conn.private` must be a map (this should not be a problem unless you explicitly modified it)
 
-  For the "index", "new", and "create" actions, the resource in the Canada.Can implementation
+  If authorization succeeds, sets `conn.assigns.authorized` to true.
+
+  If authorization fails, sets `conn.assigns.authorized` to false.
+
+  For the `:index`, `:new`, and `:create` actions, the resource in the `Canada.Can` implementation
   should be the module name of the model rather than a struct.
 
   For example:
-    use         def can?(%User{}, :index, Post), do: true
-    instead of  def can?(%User{}, :index, %Post{}), do: true
+
+    use
+    ```
+    def can?(%User{}, :index, Post), do: true
+    ```
+    instead of
+    ```
+    def can?(%User{}, :index, %Post{}), do: true
+    ```
+
+  Required opts:
+
+  * `:model` - Specifies the module name of the model to authorize access to
+
+  Optional opts:
+
+  * `:only` - Specifies which actions to authorize
+  * `:except` - Specifies which actions for which to skip authorization
+  * `:preload` - Specifies association(s) to preload
+
+  Examples:
+  ```
+  plug :authorize_resource, model: Post
+  plug :authorize_resource, model: User, preload: :posts
+  plug :authorize_resource, model: User, only: [:index, :show], preload: :posts
+  ```
   """
   def authorize_resource(conn, opts) do
     conn
@@ -98,13 +164,32 @@ defmodule Canary.Plugs do
   authorization succeeds.
 
   If the resource cannot be loaded or authorization
-  fails, conn.assigns.loaded_resource is set to nil.
+  fails, conn.assigns.resource_name is set to nil.
 
   The result of the authorization (true/false) is
   assigned to conn.assigns.authorized.
 
   Also, see the documentation for load_resource/2 and
   authorize_resource/2.
+
+  Required opts:
+
+  * `:model` - Specifies the module name of the model to load resources from
+
+  Optional opts:
+
+  * `:as` - Specifies the `resource_name` to use
+  * `:only` - Specifies which actions to authorize
+  * `:except` - Specifies which actions for which to skip authorization
+  * `:preload` - Specifies association(s) to preload
+
+  Examples:
+  ```
+  plug :load_and_authorize_resource, model: Post
+  plug :load_and_authorize_resource, model: User, preload: :posts, as: :the_user
+  plug :load_and_authorize_resource, model: User, only: [:index, :show], preload: :posts, as: :person
+  plug :load_and_authorize_resource, model: User, except: [:destroy]
+  ```
   """
   def load_and_authorize_resource(conn, opts) do
     conn
