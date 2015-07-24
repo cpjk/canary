@@ -3,7 +3,7 @@ defmodule Canary.Mixfile do
 
   def project do
     [app: :canary,
-     version: "0.9.1",
+     version: "0.9.2",
      elixir: "~> 1.0",
      package: package,
      description: """
