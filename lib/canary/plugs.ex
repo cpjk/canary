@@ -1,5 +1,5 @@
 defmodule Canary.Plugs do
-  import Canada.Can, only: [can?: 3]
+  import Canada.Can, only: [can?: 4]
   import Ecto.Query
   import Keyword, only: [has_key?: 2]
 
@@ -61,8 +61,8 @@ defmodule Canary.Plugs do
   should be the module name of the model rather than a struct.
 
   For example:
-    use         def can?(%User{}, :index, Post), do: true
-    instead of  def can?(%User{}, :index, %Post{}), do: true
+    use         def can?(%User{}, :index, Post, %{}), do: true
+    instead of  def can?(%User{}, :index, %Post{}, %{}), do: true
   """
   def authorize_resource(conn, opts) do
     conn
@@ -85,7 +85,7 @@ defmodule Canary.Plugs do
         fetch_resource(conn, opts)
     end
 
-    case current_user |> can? action, resource do
+    case current_user |> can? action, resource, get_params_if_needed(conn, opts) do
       true  ->
         %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
       false ->
@@ -240,4 +240,12 @@ defmodule Canary.Plugs do
     end
   end
 
+  defp get_params_if_needed(conn, opts) do
+    case opts[:use_request_params] do
+      true ->
+        %{"params" => conn.params}
+      _ ->
+        %{}
+    end
+  end
 end

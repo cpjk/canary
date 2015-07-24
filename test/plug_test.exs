@@ -30,22 +30,25 @@ end
 
 defimpl Canada.Can, for: User do
 
-  def can?(%User{id: user_id}, action, %Post{user_id: user_id})
+  def can?(%User{id: user_id}, action, %Post{user_id: user_id}, %{})
   when action in [:show], do: true
 
-  def can?(%User{}, :index, Post), do: true
+  def can?(%User{}, :index, Post, %{}), do: true
 
-  def can?(%User{}, action, Post)
+  def can?(%User{}, action, Post, %{"params" => %{"category_id" => category_id}})
+    when action in [:new, :create], do: category_id == 1
+
+  def can?(%User{}, action, Post, %{})
     when action in [:new, :create], do: true
 
-  def can?(%User{id: user_id}, action, %Post{user: %User{id: user_id}})
+  def can?(%User{id: user_id}, action, %Post{user: %User{id: user_id}}, %{})
     when action in [:edit, :update], do: true
 
-  def can?(%User{}, _, _), do: false
+  def can?(%User{}, _, _, %{}), do: false
 end
 
 defimpl Canada.Can, for: Atom do
-  def can?(nil, :create, Post), do: false
+  def can?(nil, :create, Post, %{}), do: false
 end
 
 
@@ -794,6 +797,117 @@ defmodule PlugTest do
       )
       expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
       expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 2, user_id: 2, user: %User{id: 2}})}
+
+      assert load_and_authorize_resource(conn, opts) == expected
+    end
+  end
+
+  defmodule UseRequestParams do
+    use ExUnit.Case, async: true
+  
+    test "it loads the resource correctly when the :use_request_params key is true" do
+      opts = [model: Post, use_request_params: true]
+
+      # when the action is "new" with accessible category
+      params = %{"category_id" => 1}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :new},
+          assigns: %{current_user: %User{id: 1}}
+        }, 
+        :get, 
+        "/posts/new", 
+        params
+      )
+      expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
+
+      assert load_resource(conn, opts) == expected
+
+
+      # when the action is "create" with inaccessible category
+      params = %{"category_id" => 2}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :create},
+          assigns: %{current_user: %User{id: 1}}
+        }, 
+        :post, 
+        "/posts/create", 
+        params
+      )
+      expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
+
+      assert load_resource(conn, opts) == expected
+    end
+
+    test "it authorizes the resource correctly when the :use_request_params key is true" do
+      opts = [model: Post, use_request_params: :true]
+
+      # when the action is "new" with accessible category
+      params = %{"category_id" => 1}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :new},
+          assigns: %{current_user: %User{id: 1}}
+        },
+        :get,
+        "/posts/new",
+        params
+      )
+      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+      assert authorize_resource(conn, opts) == expected
+
+
+      # when the action is "create" with inaccessible category
+      params = %{"category_id" => 2}
+      conn = conn(
+        %Plug.Conn{
+            private: %{phoenix_action: :create},
+            assigns: %{current_user: %User{id: 1}}
+        }, 
+        :post, 
+        "/posts/create", 
+        params
+      )
+      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+
+      assert authorize_resource(conn, opts) == expected
+    end
+
+    test "it loads and authorizes the resource correctly when the :use_request_params key is true" do
+      opts = [model: Post, use_request_params: :true]
+
+      # when the action is "new" with accessible category
+      params = %{"category_id" => 1}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :new},
+          assigns: %{current_user: %User{id: 1}}
+        },
+        :get,
+        "/posts/new",
+        params
+      )
+      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+      expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+
+      assert load_and_authorize_resource(conn, opts) == expected
+
+
+      # when the action is "create" with inaccessible category
+      params = %{"category_id" => 2}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :create},
+          assigns: %{current_user: %User{id: 1}}
+        },
+        :post,
+        "/posts/create",
+        params
+      )
+      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+      expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
 
       assert load_and_authorize_resource(conn, opts) == expected
     end
