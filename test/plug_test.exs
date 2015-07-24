@@ -6,6 +6,8 @@ defmodule Post do
   use Ecto.Model
 
   schema "posts" do
+    belongs_to :user, :integer, define_field: false # :defaults not working so define own field with default value
+
     field :user_id, :integer, default: 1
   end
 end
@@ -18,10 +20,16 @@ defmodule Repo do
   def get(Post, 2), do: %Post{id: 2, user_id: 2 }
   def get(Post, _), do: nil
 
-  def all(_), do: [%Post{id: 1}, %Post{id: 2}]
+  def all(_), do: [%Post{id: 1}, %Post{id: 2, user_id: 2}]
+
+  def preload(%Post{id: 1}, :user), do: %Post{id: 1}
+  def preload(%Post{id: 2, user_id: 2}, :user), do: %Post{id: 2, user_id: 2, user: %User{id: 2}}
+  def preload([%Post{id: 1},  %Post{id: 2, user_id: 2}], :user), do: [%Post{id: 1}, %Post{id: 2, user_id: 2, user: %User{id: 2}}]
+  def preload(resources, _), do: resources
 end
 
 defimpl Canada.Can, for: User do
+
   def can?(%User{id: user_id}, action, %Post{user_id: user_id})
   when action in [:show], do: true
 
@@ -29,6 +37,9 @@ defimpl Canada.Can, for: User do
 
   def can?(%User{}, action, Post)
     when action in [:new, :create], do: true
+
+  def can?(%User{id: user_id}, action, %Post{user: %User{id: user_id}})
+    when action in [:edit, :update], do: true
 
   def can?(%User{}, _, _), do: false
 end
@@ -49,8 +60,7 @@ defmodule PlugTest do
 
   Application.put_env :canary, :repo, Repo
 
-
-  test "it loads the load resource correctly" do
+  test "it loads the resource correctly" do
     opts = [model: Post]
 
     # when the resource with the id can be fetched
@@ -72,7 +82,7 @@ defmodule PlugTest do
     # when the action is "index"
     params = %{}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :index}}, :get, "/posts", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :posts, [%Post{id: 1}, %Post{id: 2}])}
+    expected = %{conn | assigns: Map.put(conn.assigns, :posts, [%Post{id: 1}, %Post{id: 2, user_id: 2}])}
 
     assert load_resource(conn, opts) == expected
 
@@ -647,6 +657,145 @@ defmodule PlugTest do
       assert_raise KeyError, "key :configured_current_user not found in: %{authorized: true, user: %User{id: 1}}", fn->
         authorize_resource(conn, opts)
       end
+    end
+  end
+
+  defmodule Preload do
+    use ExUnit.Case, async: true
+  
+    test "it loads the resource correctly when the :preload key is specified" do
+      opts = [model: Post, preload: :user]
+
+      # when the resource with the id can be fetched and the association exists
+      params = %{"id" => 2}
+      conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
+      expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 2, user_id: 2, user: %User{id: 2}})}
+
+      assert load_resource(conn, opts) == expected
+
+
+      # when the resource with the id can be fetched and the association does not exists
+      params = %{"id" => 1}
+      conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
+      expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1, user_id: 1})}
+
+      assert load_resource(conn, opts) == expected
+
+
+      # when the resource with the id cannot be fetched
+      params = %{"id" => 3}
+      conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/3", params)
+      expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
+
+      assert load_resource(conn, opts) == expected
+
+
+      # when the action is "index"
+      params = %{}
+      conn = conn(%Plug.Conn{private: %{phoenix_action: :index}}, :get, "/posts", params)
+      expected = %{conn | assigns: Map.put(conn.assigns, :posts, [%Post{id: 1}, %Post{id: 2, user_id: 2, user: %User{id: 2}}])}
+
+      assert load_resource(conn, opts) == expected
+
+
+      # when the action is "new"
+      params = %{}
+      conn = conn(%Plug.Conn{private: %{phoenix_action: :new}}, :get, "/posts/new", params)
+      expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
+
+      assert load_resource(conn, opts) == expected
+    end
+
+    test "it authorizes the resource correctly when the :preload key is specified" do
+      opts = [model: Post, preload: :user]
+
+      # when the action is "edit"
+      # In this case we use the loaded association and check params of this one in can?/3
+      params = %{"id" => 2}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :edit},
+          assigns: %{current_user: %User{id: 2}}
+        },
+        :get,
+        "/posts/edit/2",
+        params
+      )
+      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+      assert authorize_resource(conn, opts) == expected
+
+
+      # when the action is "index"
+      params = %{}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :index},
+          assigns: %{current_user: %User{id: 1}}
+        },
+        :get,
+        "/posts",
+        params
+      )
+      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+      assert authorize_resource(conn, opts) == expected
+    end
+
+    test "it loads and authorizes the resource correctly when the :preload key is specified" do
+      opts = [model: Post, preload: :user]
+
+      # when the current user can access the given resource
+      # and the resource can be loaded and the association exists
+      params = %{"id" => 2}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :show},
+          assigns: %{current_user: %User{id: 2}}
+        },
+        :get,
+        "/posts/2",
+        params
+      )
+      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+      expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 2, user_id: 2, user: %User{id: 2}})}
+
+      assert load_and_authorize_resource(conn, opts) == expected
+
+
+      # when the current user can access the given resource
+      # and the resource can be loaded and the association does not exists
+      params = %{"id" => 1}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :show},
+          assigns: %{current_user: %User{id: 1}}
+        },
+        :get,
+        "/posts/1",
+        params
+      )
+      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+      expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 1, user_id: 1})}
+
+      assert load_and_authorize_resource(conn, opts) == expected
+
+      # when the action is "edit"
+      # In this case we use the loaded association and check params of this one in can?/3
+      params = %{"id" => 2}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :edit},
+          assigns: %{current_user: %User{id: 2}}
+        },
+        :get,
+        "/posts/edit/2",
+        params
+      )
+      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+      expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 2, user_id: 2, user: %User{id: 2}})}
+
+      assert load_and_authorize_resource(conn, opts) == expected
     end
   end
 end

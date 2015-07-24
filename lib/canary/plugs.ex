@@ -132,15 +132,21 @@ defmodule Canary.Plugs do
     |> Map.fetch(resource_name(conn, opts))
     |> case do
       :error ->
-        Application.get_env(:canary, :repo).get(opts[:model], conn.params["id"])
+        repo = Application.get_env(:canary, :repo)
+        repo.get(opts[:model], conn.params["id"])
+        |> preload_if_needed(repo, opts)
       {:ok, nil} ->
-        Application.get_env(:canary, :repo).get(opts[:model], conn.params["id"])
+        repo = Application.get_env(:canary, :repo)
+        repo.get(opts[:model], conn.params["id"])
+        |> preload_if_needed(repo, opts)
       {:ok, resource} -> # if there is already a resource loaded onto the conn
         case (resource.__struct__ == opts[:model]) do
           true  ->
             resource
           false ->
-            Application.get_env(:canary, :repo).get(opts[:model], conn.params["id"])
+            repo = Application.get_env(:canary, :repo)
+            repo.get(opts[:model], conn.params["id"])
+            |> preload_if_needed(repo, opts)
         end
     end
   end
@@ -150,13 +156,15 @@ defmodule Canary.Plugs do
     |> Map.fetch(resource_name(conn, opts))
     |> case do
       :error ->
-        from(m in opts[:model]) |> select([m], m) |> Application.get_env(:canary, :repo).all
+        repo = Application.get_env(:canary, :repo)
+        from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
       {:ok, resource} ->
         case (resource.__struct__ == opts[:model]) do
           true  ->
             resource
           false ->
-            from(m in opts[:model]) |> select([m], m) |> Application.get_env(:canary, :repo).all
+            repo = Application.get_env(:canary, :repo)
+            from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
         end
     end
   end
@@ -222,4 +230,14 @@ defmodule Canary.Plugs do
       _    -> name
     end
   end
+
+  defp preload_if_needed(records, repo, opts) do
+    case opts[:preload] do
+      nil ->
+        records
+      models ->
+        repo.preload(records, models)
+    end
+  end
+
 end
