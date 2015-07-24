@@ -3,7 +3,7 @@ defmodule Canary.Mixfile do
 
   def project do
     [app: :canary,
-     version: "0.9.2",
+     version: "1.0.0",
      elixir: "~> 1.0",
      package: package,
      description: """
@@ -20,19 +20,19 @@ defmodule Canary.Mixfile do
   end
 
   defp package do
-    [contributors: ["Chris Kelly"],
+    [contributors: ["Chris Kelly", "Fabian Keunecke"],
     licenses: ["MIT"],
-    links: %{"GitHub" => "https://github.com/cpjk/canary"}]
+    links: %{"GitHub" => "https://github.com/Fabi755/canary"}]
   end
 
   defp deps do
     [
-     { :ecto, ">= 0.10.0" },
-     { :canada, "~> 1.0.0" },
-     { :plug, ">= 0.11.3" },
-     {:ex_doc, "~> 0.7", only: :dev},
-     {:earmark, ">= 0.0.0", only: :dev},
-     {:mock, ">= 0.0.0", only: :test}
+      {:ecto, ">= 0.10.0"},
+      {:canada, github: "Fabi755/canada"},
+      {:plug, ">= 0.11.3"},
+      {:ex_doc, "~> 0.7", only: :dev},
+      {:earmark, ">= 0.0.0", only: :dev},
+      {:mock, ">= 0.0.0", only: :test}
     ]
   end
 end
