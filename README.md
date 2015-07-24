@@ -38,7 +38,7 @@ By default, Canary expects  ```conn.assigns.current_user``` to contain an Ecto r
 Specify your Ecto repo in your configuration:
 
 ```
-config :canary, repo: Project.Repo,
+config :canary, repo: Project.Repo
 ```
 
 ####load_resource/2####
@@ -152,3 +152,11 @@ For example,
 plug :load_and_authorize_resource, model: Project.Post, as: :new_post
 ```
 will load the post into `conn.assigns.new_post`
+
+#### Preloading associations
+
+Associations can be preloaded with Repo.preload by passing the ```:preload``` option with the name of the association:
+
+```elixir
+plug :load_and_authorize_resource, model: Project.User, preload: :posts
+```
