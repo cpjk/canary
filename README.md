@@ -155,7 +155,7 @@ will load the post into `conn.assigns.new_post`
 
 #### Preloading associations
 
-Associations can be preloaded with Repo.preload by passing the ```:preload``` option with the name of the association:
+Associations can be preloaded with ```Repo.preload``` by passing the ```:preload``` option with the name of the association:
 
 ```elixir
 plug :load_and_authorize_resource, model: Project.User, preload: :posts
