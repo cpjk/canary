@@ -55,11 +55,13 @@ defmodule Canary.Plugs do
   Examples:
   ```
   plug :load_resource, model: Post
+
   plug :load_resource, model: User, preload: :posts, as: :the_user
+
   plug :load_resource, model: User, only: [:index, :show], preload: :posts, as: :person
+
   plug :load_resource, model: User, except: [:destroy]
   ```
-
   """
   def load_resource(conn, opts) do
     conn
@@ -126,7 +128,9 @@ defmodule Canary.Plugs do
   Examples:
   ```
   plug :authorize_resource, model: Post
+
   plug :authorize_resource, model: User, preload: :posts
+
   plug :authorize_resource, model: User, only: [:index, :show], preload: :posts
   ```
   """
@@ -186,8 +190,11 @@ defmodule Canary.Plugs do
   Examples:
   ```
   plug :load_and_authorize_resource, model: Post
+
   plug :load_and_authorize_resource, model: User, preload: :posts, as: :the_user
+
   plug :load_and_authorize_resource, model: User, only: [:index, :show], preload: :posts, as: :person
+
   plug :load_and_authorize_resource, model: User, except: [:destroy]
   ```
   """
