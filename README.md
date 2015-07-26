@@ -6,6 +6,8 @@ the current user is allowed to access, and automatically loads resources for the
 
 Inspired by [CanCan](https://github.com/CanCanCommunity/cancancan) for Ruby on Rails.
 
+[Read the docs](http://hexdocs.pm/canary)
+
 ## Installation ##
 For the latest master:
 
