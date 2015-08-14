@@ -33,7 +33,7 @@ Canary provides three functions to be used as plugs to load and authorize resour
 
 ```load_resource/2```, ```authorize_resource/2```, and ```load_and_authorize_resource/2```.
 
-Just ```use Canary``` in order to use the plugs. In a Phoenix app the best place would probably be in your ```web/web.ex```.
+Just ```import Canary.Plugs``` in order to use the plugs. In a Phoenix app the best place would probably be in your ```web/web.ex```.
 
 By default, Canary expects  ```conn.assigns.current_user``` to contain an Ecto record representing the user to authorize.
 

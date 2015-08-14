@@ -50,7 +50,7 @@ end
 
 
 defmodule PlugTest do
-  use Canary
+  import Canary.Plugs
 
   import Plug.Adapters.Test.Conn, only: [conn: 4]
 
