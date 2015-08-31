@@ -162,3 +162,20 @@ Associations can be preloaded with ```Repo.preload``` by passing the ```:preload
 ```elixir
 plug :load_and_authorize_resource, model: Project.User, preload: :posts
 ```
+#### A note about index, new, and create actions
+For the `:index`, `:new`, and `:create` actions, the resource passed to the `Canada.Can` implementation
+should be the *module* name of the model rather than a struct.
+
+For example, when authorizing access to the `Post` resource,
+
+  use
+
+  ```
+  def can?(%User{}, :index, Post), do: true
+  ```
+
+  instead of
+
+  ```
+  def can?(%User{}, :index, %Post{}), do: true
+  ```
