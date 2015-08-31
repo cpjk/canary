@@ -1,7 +1,7 @@
 %{"canada": {:hex, :canada, "1.0.0"},
   "decimal": {:hex, :decimal, "1.1.0"},
   "earmark": {:hex, :earmark, "0.1.17"},
-  "ecto": {:hex, :ecto, "0.14.3"},
+  "ecto": {:hex, :ecto, "1.0.1"},
   "ex_doc": {:hex, :ex_doc, "0.7.3"},
   "meck": {:hex, :meck, "0.8.3"},
   "mock": {:hex, :mock, "0.1.1"},
