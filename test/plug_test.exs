@@ -662,7 +662,7 @@ defmodule PlugTest do
 
   defmodule Preload do
     use ExUnit.Case, async: true
-  
+
     test "it loads the resource correctly when the :preload key is specified" do
       opts = [model: Post, preload: :user]
 
@@ -674,7 +674,7 @@ defmodule PlugTest do
       assert load_resource(conn, opts) == expected
 
 
-      # when the resource with the id can be fetched and the association does not exists
+      # when the resource with the id can be fetched and the association does not exist
       params = %{"id" => 1}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
       expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1, user_id: 1})}
@@ -710,7 +710,6 @@ defmodule PlugTest do
       opts = [model: Post, preload: :user]
 
       # when the action is "edit"
-      # In this case we use the loaded association and check params of this one in can?/3
       params = %{"id" => 2}
       conn = conn(
         %Plug.Conn{
@@ -764,7 +763,7 @@ defmodule PlugTest do
 
 
       # when the current user can access the given resource
-      # and the resource can be loaded and the association does not exists
+      # and the resource can be loaded and the association does not exist
       params = %{"id" => 1}
       conn = conn(
         %Plug.Conn{
@@ -781,7 +780,6 @@ defmodule PlugTest do
       assert load_and_authorize_resource(conn, opts) == expected
 
       # when the action is "edit"
-      # In this case we use the loaded association and check params of this one in can?/3
       params = %{"id" => 2}
       conn = conn(
         %Plug.Conn{
