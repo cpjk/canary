@@ -322,6 +322,8 @@ defmodule Canary.Plugs do
     end
   end
 
+  defp preload_if_needed(nil, _repo, _opts), do: nil
+
   defp preload_if_needed(records, repo, opts) do
     case opts[:preload] do
       nil ->
@@ -330,5 +332,4 @@ defmodule Canary.Plugs do
         repo.preload(records, models)
     end
   end
-
 end
