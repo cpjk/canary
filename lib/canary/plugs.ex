@@ -23,8 +23,8 @@ defmodule Canary.Plugs do
   @doc """
   Load the given resource.
 
-  Load the resource with id given by `conn.params["id"]` and ecto model given by
-  opts[:model] into `conn.assigns.resource_name`.
+  Load the resource with id given by `conn.params[opt[:id]]` (`opts[:id]` defaults to "id") ecto model given
+  by opts[:model] into `conn.assigns.resource_name`.
 
   `resource_name` is either inferred from the model name or specified in the plug declaration with the `:as` key.
   To infer the `resource_name`, the most specific(right most) name in the model's
@@ -222,21 +222,28 @@ defmodule Canary.Plugs do
   defp fetch_resource(conn, opts) do
     repo = Application.get_env(:canary, :repo)
 
+    id = case opts[:id] do
+      nil ->
+        conn.params["id"]
+      resource_id ->
+        conn.params[resource_id]
+    end
+
     conn
     |> Map.fetch(resource_name(conn, opts))
     |> case do
       :error ->
-        repo.get(opts[:model], conn.params["id"])
+        repo.get(opts[:model], id)
         |> preload_if_needed(repo, opts)
       {:ok, nil} ->
-        repo.get(opts[:model], conn.params["id"])
+        repo.get(opts[:model], id)
         |> preload_if_needed(repo, opts)
       {:ok, resource} -> # if there is already a resource loaded onto the conn
         case (resource.__struct__ == opts[:model]) do
           true  ->
             resource
           false ->
-            repo.get(opts[:model], conn.params["id"])
+            repo.get(opts[:model], id)
             |> preload_if_needed(repo, opts)
         end
     end
