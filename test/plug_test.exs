@@ -103,6 +103,17 @@ defmodule PlugTest do
     assert load_resource(conn, opts) == expected
   end
 
+  test "it loads the resource correctly with opts[:id] specified" do
+    opts = [model: Post, id: "user_id"]
+
+    # when id param is correct
+    params = %{"user_id" => 1}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
+
+    assert load_resource(conn, opts) == expected
+  end
+
   test "it authorizes the resource correctly" do
     opts = [model: Post]
 
