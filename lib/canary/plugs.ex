@@ -222,12 +222,7 @@ defmodule Canary.Plugs do
   defp fetch_resource(conn, opts) do
     repo = Application.get_env(:canary, :repo)
 
-    id = case opts[:id] do
-      nil ->
-        conn.params["id"]
-      resource_id ->
-        conn.params[resource_id]
-    end
+    id = get_resource_id(conn, opts)
 
     conn
     |> Map.fetch(resource_name(conn, opts))
@@ -246,6 +241,15 @@ defmodule Canary.Plugs do
             repo.get(opts[:model], id)
             |> preload_if_needed(repo, opts)
         end
+    end
+  end
+
+  defp get_resource_id(conn, opts) do
+    case opts[:id] do
+      nil ->
+        conn.params["id"]
+      resource_id ->
+        conn.params[resource_id]
     end
   end
 
