@@ -23,8 +23,8 @@ defmodule Canary.Plugs do
   @doc """
   Load the given resource.
 
-  Load the resource with id given by `conn.params[opt[:id]]` (`opts[:id]` defaults to "id") ecto model given
-  by opts[:model] into `conn.assigns.resource_name`.
+  Load the resource with id given by `conn.params["id"]` (or `conn.params[opts[:id]]` if `opts[:id]` is specified)
+  and ecto model given by `opts[:model]` into `conn.assigns.resource_name`.
 
   `resource_name` is either inferred from the model name or specified in the plug declaration with the `:as` key.
   To infer the `resource_name`, the most specific(right most) name in the model's
