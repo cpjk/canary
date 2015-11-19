@@ -103,8 +103,8 @@ defmodule PlugTest do
     assert load_resource(conn, opts) == expected
   end
 
-  test "it loads the resource correctly with opts[:id] specified" do
-    opts = [model: Post, id: "user_id"]
+  test "it loads the resource correctly with opts[:id_name] specified" do
+    opts = [model: Post, id_name: "user_id"]
 
     # when id param is correct
     params = %{"user_id" => 1}
