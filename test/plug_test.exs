@@ -176,7 +176,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{},
-        assigns: %{current_user: %User{id: 1}, action: :show}
+        assigns: %{current_user: %User{id: 1}, canary_action: :show}
       },
       :get,
       "/posts/1",
@@ -193,7 +193,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :show},
-        assigns: %{current_user: %User{id: 1}, action: :unauthorized}
+        assigns: %{current_user: %User{id: 1}, canary_action: :unauthorized}
       },
       :get,
       "/posts/1",
@@ -209,7 +209,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{},
-        assigns: %{current_user: %User{id: 1}, action: :show}
+        assigns: %{current_user: %User{id: 1}, canary_action: :show}
       },
       :get,
       "/posts/2",
@@ -225,7 +225,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{},
-        assigns: %{current_user: nil, action: :create}
+        assigns: %{current_user: nil, canary_action: :create}
       },
       :post,
       "/posts",
@@ -262,7 +262,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{},
-        assigns: %{current_user: %User{id: 1}, action: :show}
+        assigns: %{current_user: %User{id: 1}, canary_action: :show}
       },
       :get,
       "/posts/2",
@@ -279,7 +279,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{},
-        assigns: %{current_user: %User{id: 1}, action: :show}
+        assigns: %{current_user: %User{id: 1}, canary_action: :show}
       },
       :get,
       "/posts/1",
