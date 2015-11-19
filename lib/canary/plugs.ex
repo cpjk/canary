@@ -51,6 +51,7 @@ defmodule Canary.Plugs do
   * `:only` - Specifies which actions to authorize
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
+  * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
 
   Examples:
   ```
@@ -124,6 +125,7 @@ defmodule Canary.Plugs do
   * `:only` - Specifies which actions to authorize
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
+  * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
 
   Examples:
   ```
@@ -186,6 +188,7 @@ defmodule Canary.Plugs do
   * `:only` - Specifies which actions to authorize
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
+  * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
 
   Examples:
   ```
