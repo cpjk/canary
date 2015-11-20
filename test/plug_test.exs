@@ -104,10 +104,10 @@ defmodule PlugTest do
   end
 
   test "it loads the resource correctly with opts[:id_name] specified" do
-    opts = [model: Post, id_name: "user_id"]
+    opts = [model: Post, id_name: "post_id"]
 
     # when id param is correct
-    params = %{"user_id" => 1}
+    params = %{"post_id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
     expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
 
