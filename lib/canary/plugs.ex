@@ -251,7 +251,7 @@ defmodule Canary.Plugs do
     case opts[:id_name] do
       nil ->
         conn.params["id"]
-      id_name ->)
+      id_name ->
         conn.params[id_name]
     end
   end
