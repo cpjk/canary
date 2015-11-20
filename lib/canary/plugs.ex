@@ -51,6 +51,7 @@ defmodule Canary.Plugs do
   * `:only` - Specifies which actions to authorize
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
+  * `:parent_to` - Specifies resource relation
 
   Examples:
   ```
@@ -101,8 +102,19 @@ defmodule Canary.Plugs do
 
   If authorization fails, sets `conn.assigns.authorized` to false.
 
-  For the `:index`, `:new`, and `:create` actions, the resource in the `Canada.Can` implementation
-  should be the module name of the model rather than a struct.
+  In order to base authorization on a parent resource use `:parent_to` together with `:id_name`.
+  The parent resource can then be matched against together with the child's model in
+  the `Canada.Can` implementation:
+
+    ```
+    plug :authorize_resource, model: Thread, id_name: "thread_id",
+      parent_to: Post, only: [:index, :create]
+
+    def can?(%User{}, :create, {Post, %{Thread{id: thread_id}}}), do: true
+    ```
+
+  If the `opts[:parent_to]` is not specified for for the `:index`, `:new`, and `:create` actions,
+  the resource in the `Canada.Can` implementation should be the module name of the model rather than a struct.
 
   For example:
 
@@ -124,6 +136,7 @@ defmodule Canary.Plugs do
   * `:only` - Specifies which actions to authorize
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
+  * `:parent_to` - Specifies resource relation
 
   Examples:
   ```
@@ -148,11 +161,16 @@ defmodule Canary.Plugs do
     current_user = Dict.fetch! conn.assigns, current_user_name
     action = get_action(conn)
 
-    resource = cond do
-      action in [:index, :new, :create] ->
-        opts[:model]
-      true      ->
-        fetch_resource(conn, opts)
+    resource = case opts[:parent_to] do
+      nil ->
+        cond do
+          action in [:index, :new, :create] ->
+            opts[:model]
+          true ->
+            fetch_resource(conn, opts)
+        end
+      child_model ->
+        {child_model, fetch_resource(conn, opts)}
     end
 
     case current_user |> can? action, resource do
@@ -186,6 +204,7 @@ defmodule Canary.Plugs do
   * `:only` - Specifies which actions to authorize
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
+  * `:parent_to` - Specifies resource relation
 
   Examples:
   ```
