@@ -225,29 +225,29 @@ defmodule Canary.Plugs do
   defp fetch_resource(conn, opts) do
     repo = Application.get_env(:canary, :repo)
 
-    id_name = get_resource_id_name(conn, opts)
+    id = get_resource_id(conn, opts)
 
     conn
     |> Map.fetch(resource_name(conn, opts))
     |> case do
       :error ->
-        repo.get(opts[:model], id_name)
+        repo.get(opts[:model], id)
         |> preload_if_needed(repo, opts)
       {:ok, nil} ->
-        repo.get(opts[:model], id_name)
+        repo.get(opts[:model], id)
         |> preload_if_needed(repo, opts)
       {:ok, resource} -> # if there is already a resource loaded onto the conn
         case (resource.__struct__ == opts[:model]) do
           true  ->
             resource
           false ->
-            repo.get(opts[:model], id_name)
+            repo.get(opts[:model], id)
             |> preload_if_needed(repo, opts)
         end
     end
   end
 
-  defp get_resource_id_name(conn, opts) do
+  defp get_resource_id(conn, opts) do
     case opts[:id_name] do
       nil ->
         conn.params["id"]
