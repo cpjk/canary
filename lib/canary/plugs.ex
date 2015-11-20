@@ -23,8 +23,8 @@ defmodule Canary.Plugs do
   @doc """
   Load the given resource.
 
-  Load the resource with id given by `conn.params["id"]` and ecto model given by
-  opts[:model] into `conn.assigns.resource_name`.
+  Load the resource with id given by `conn.params["id"]` (or `conn.params[opts[:id_name]]` if `opts[:id_name]` is specified)
+  and ecto model given by `opts[:model]` into `conn.assigns.resource_name`.
 
   `resource_name` is either inferred from the model name or specified in the plug declaration with the `:as` key.
   To infer the `resource_name`, the most specific(right most) name in the model's
@@ -51,6 +51,7 @@ defmodule Canary.Plugs do
   * `:only` - Specifies which actions to authorize
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
+  * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
 
   Examples:
   ```
@@ -124,6 +125,7 @@ defmodule Canary.Plugs do
   * `:only` - Specifies which actions to authorize
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
+  * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
 
   Examples:
   ```
@@ -186,6 +188,7 @@ defmodule Canary.Plugs do
   * `:only` - Specifies which actions to authorize
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
+  * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
 
   Examples:
   ```
@@ -222,23 +225,34 @@ defmodule Canary.Plugs do
   defp fetch_resource(conn, opts) do
     repo = Application.get_env(:canary, :repo)
 
+    id = get_resource_id(conn, opts)
+
     conn
     |> Map.fetch(resource_name(conn, opts))
     |> case do
       :error ->
-        repo.get(opts[:model], conn.params["id"])
+        repo.get(opts[:model], id)
         |> preload_if_needed(repo, opts)
       {:ok, nil} ->
-        repo.get(opts[:model], conn.params["id"])
+        repo.get(opts[:model], id)
         |> preload_if_needed(repo, opts)
       {:ok, resource} -> # if there is already a resource loaded onto the conn
         case (resource.__struct__ == opts[:model]) do
           true  ->
             resource
           false ->
-            repo.get(opts[:model], conn.params["id"])
+            repo.get(opts[:model], id)
             |> preload_if_needed(repo, opts)
         end
+    end
+  end
+
+  defp get_resource_id(conn, opts) do
+    case opts[:id_name] do
+      nil ->
+        conn.params["id"]
+      resource_id ->
+        conn.params[resource_id]
     end
   end
 
