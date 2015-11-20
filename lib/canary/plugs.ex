@@ -227,7 +227,7 @@ defmodule Canary.Plugs do
 
     id = get_resource_id(conn, opts)
 
-    conn
+    conn.assigns
     |> Map.fetch(resource_name(conn, opts))
     |> case do
       :error ->
