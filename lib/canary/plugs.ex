@@ -262,7 +262,7 @@ defmodule Canary.Plugs do
 
   defp get_action(conn) do
     conn.assigns
-    |> Map.fetch(:action)
+    |> Map.fetch(:canary_action)
     |> case do
       {:ok, action} -> action
       _             -> conn.private.phoenix_action

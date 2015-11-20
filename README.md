@@ -59,7 +59,7 @@ Checks whether or not the ```current_user``` can perform the given action on the
 
 For Phoenix applications, Canary determines the action automatically.
 
-For non-Phoenix applications, or to override the action provided by Phoenix, simply ensure that ```conn.assigns.action``` contains an atom specifying the action.
+For non-Phoenix applications, or to override the action provided by Phoenix, simply ensure that ```conn.assigns.canary_action``` contains an atom specifying the action.
 
 In order to authorize resources, you must specify permissions by implementing the [Canada.Can protocol](https://github.com/jarednorman/canada) for your ```User``` model (Canada is included as a light weight dependency).
 
