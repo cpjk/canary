@@ -1,5 +1,7 @@
 Canary
 ======
+[![Build Status](https://travis-ci.org/cpjk/canary.svg?branch=master 
+"Build Status")](https://travis-ci.org/cpjk/canary)
 
 An authorization library in Elixir for Plug applications that restricts what resources
 the current user is allowed to access, and automatically loads resources for the current request.
