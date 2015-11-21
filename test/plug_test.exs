@@ -182,7 +182,7 @@ defmodule PlugTest do
 
 
     # when the current user can access the given resource
-    # and the action is specified in conn.assigns.action
+    # and the action is specified in conn.assigns.canary_action
     params = %{"id" => 1}
     conn = conn(
       %Plug.Conn{
@@ -198,8 +198,8 @@ defmodule PlugTest do
     assert authorize_resource(conn, opts) == expected
 
 
-    # when both conn.assigns.action and conn.private.phoenix_action are defined
-    # it uses conn.assigns.action for authorization
+    # when both conn.assigns.canary_action and conn.private.phoenix_action are defined
+    # it uses conn.assigns.canary_action for authorization
     params = %{"id" => 1}
     conn = conn(
       %Plug.Conn{
