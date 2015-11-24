@@ -181,3 +181,5 @@ For example, when authorizing access to the `Post` resource,
   ```
   def can?(%User{}, :index, %Post{}), do: true
   ```
+## License
+MIT License. Copyright 2015 Chris Kelly.
