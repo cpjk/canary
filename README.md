@@ -23,7 +23,7 @@ For the latest release:
 
 ```elixir
 defp deps do
-  {:canary, "~> 0.10.0"}
+  {:canary, "~> 0.10.1"}
 end
 ```
 
