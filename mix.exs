@@ -20,7 +20,7 @@ defmodule Canary.Mixfile do
   end
 
   defp package do
-    [contributors: ["Chris Kelly"],
+    [maintainers: ["Chris Kelly"],
     licenses: ["MIT"],
     links: %{"GitHub" => "https://github.com/cpjk/canary"}]
   end
