@@ -75,14 +75,17 @@ defmodule Canary.Plugs do
   end
 
   defp _load_resource(conn, opts) do
-    loaded_resource = case get_action(conn) do
-      :index  ->
+    action = get_action(conn)
+    is_persisted = get_persisted(opts)
+
+    loaded_resource = cond do
+      action == :index ->
         fetch_all(conn, opts)
-      :new    ->
+      is_persisted ->
+        fetch_resource(conn, opts)
+      action in [:new, :create] ->
         nil
-      :create ->
-        nil
-      _       ->
+      true ->
         fetch_resource(conn, opts)
     end
 
@@ -323,6 +326,10 @@ defmodule Canary.Plugs do
       true ->
         true
     end
+  end
+
+  defp get_persisted(opts) do
+    Keyword.get(opts, :persisted, false)
   end
 
   defp resource_name(conn, opts) do

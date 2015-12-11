@@ -17,7 +17,7 @@ defmodule Repo do
   def get(User, _id), do: nil
 
   def get(Post, 1), do: %Post{id: 1}
-  def get(Post, 2), do: %Post{id: 2, user_id: 2 }
+  def get(Post, 2), do: %Post{id: 2, user_id: 2}
   def get(Post, _), do: nil
 
   def all(_), do: [%Post{id: 1}, %Post{id: 2, user_id: 2}]
@@ -125,6 +125,26 @@ defmodule PlugTest do
     params = %{"post_id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
     expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
+
+    assert load_resource(conn, opts) == expected
+  end
+
+  test "it loads the resource correctly with opts[:persisted] specified on :new action" do
+    opts = [model: User, id_name: "user_id", persisted: true]
+
+    params = %{"user_id" => 1}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :new}}, :get, "/users/1/posts/new", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :user, %User{id: 1})}
+
+    assert load_resource(conn, opts) == expected
+  end
+
+  test "it loads the resource correctly with opts[:persisted] specified on :create action" do
+    opts = [model: User, id_name: "user_id", persisted: true]
+
+    params = %{"user_id" => 1}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :create}}, :post, "/users/1/posts", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :user, %User{id: 1})}
 
     assert load_resource(conn, opts) == expected
   end
