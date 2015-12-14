@@ -49,7 +49,7 @@ config :canary, repo: Project.Repo
 Loads the resource having the id given in ```conn.params["id"]``` from the database using the given Ecto repo and model, and assigns the resource to ```conn.assigns.<resource_name>```, where `resource_name` is inferred from the model name.
 
 For example,
-
+c
 ```elixir
 plug :load_resource, model: Project.User
 ```
@@ -181,5 +181,15 @@ For example, when authorizing access to the `Post` resource,
   ```
   def can?(%User{}, :index, %Post{}), do: true
   ```
+  
+#### Implementing Canada.Can for an anonymous user
+You may wish to define permissions for when there is no logged in current user (when `conn.assigns.current_user` is `nil`).
+In this case, you can implement `Canada.Can` for `nil` like so:
+```elixir
+defimpl Canada.Can, for: Atom do
+  # When the user is not logged in, authorization should always fail
+  def can?(nil, _, _), do: false
+end
+```
 ## License
 MIT License. Copyright 2015 Chris Kelly.
