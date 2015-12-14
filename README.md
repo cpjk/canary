@@ -41,7 +41,7 @@ By default, Canary expects  ```conn.assigns.current_user``` to contain an Ecto r
 
 Specify your Ecto repo in your configuration:
 
-```
+```elixir
 config :canary, repo: Project.Repo
 ```
 
@@ -172,13 +172,13 @@ For example, when authorizing access to the `Post` resource,
 
   use
 
-  ```
+  ```elixir
   def can?(%User{}, :index, Post), do: true
   ```
 
   instead of
 
-  ```
+  ```elixir
   def can?(%User{}, :index, %Post{}), do: true
   ```
   
@@ -191,5 +191,25 @@ defimpl Canada.Can, for: Atom do
   def can?(nil, _, _), do: false
 end
 ```
+
+#### Handling unauthorized actions
+Canary makes no assumptions about the handling of unauthorized actions.
+However, you can easily handle unauthorized actions by defining a plug like so:
+```elixir
+def redirect_if_unauthorized(conn = %Plug.Conn{assigns: %{authorized: false} }, opts) do
+  conn
+  |> put_flash(:error, "You can't access that page!")
+  |> redirect(to: "/")
+  |> halt
+end
+
+def redirect_if_unauthorized(conn = %Plug.Conn{assigns: %{authorized: true} }, opts), do: conn
+```
+and then calling the plug after any authorization plugs:
+
+```elixir
+plug :redirect_if_unauthorized
+```
+
 ## License
 MIT License. Copyright 2015 Chris Kelly.
