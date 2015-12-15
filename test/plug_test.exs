@@ -129,6 +129,16 @@ defmodule PlugTest do
     assert load_resource(conn, opts) == expected
   end
 
+  test "it loads the resource correctly with opts[:persisted] specified on :index action" do
+    opts = [model: User, id_name: "user_id", persisted: true]
+
+    params = %{"user_id" => 1}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :index}}, :get, "/users/1/posts", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :user, %User{id: 1})}
+
+    assert load_resource(conn, opts) == expected
+  end
+
   test "it loads the resource correctly with opts[:persisted] specified on :new action" do
     opts = [model: User, id_name: "user_id", persisted: true]
 

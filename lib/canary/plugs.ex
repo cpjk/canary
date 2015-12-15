@@ -79,10 +79,10 @@ defmodule Canary.Plugs do
     is_persisted = get_persisted(opts)
 
     loaded_resource = cond do
-      action == :index ->
-        fetch_all(conn, opts)
       is_persisted ->
         fetch_resource(conn, opts)
+      action == :index ->
+        fetch_all(conn, opts)
       action in [:new, :create] ->
         nil
       true ->
@@ -339,16 +339,17 @@ defmodule Canary.Plugs do
         |> Module.split
         |> List.last
         |> Mix.Utils.underscore
-        |> pluralize_if_needed(conn)
+        |> pluralize_if_needed(conn, opts)
         |> String.to_atom
       as -> as
     end
   end
 
-  defp pluralize_if_needed(name, conn) do
-    case get_action(conn) in [:index] do
-      true -> name <> "s"
-      _    -> name
+  defp pluralize_if_needed(name, conn, opts) do
+    if get_action(conn) in [:index] and not get_persisted(opts) do
+      name <> "s"
+    else
+      name
     end
   end
 
