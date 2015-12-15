@@ -196,14 +196,14 @@ end
 Canary makes no assumptions about the handling of unauthorized actions.
 However, you can easily handle unauthorized actions by defining a plug like so:
 ```elixir
-def redirect_if_unauthorized(conn = %Plug.Conn{assigns: %{authorized: false} }, opts) do
+def redirect_if_unauthorized(conn = %Plug.Conn{assigns: %{authorized: false}}, opts) do
   conn
   |> put_flash(:error, "You can't access that page!")
   |> redirect(to: "/")
   |> halt
 end
 
-def redirect_if_unauthorized(conn = %Plug.Conn{assigns: %{authorized: true} }, opts), do: conn
+def redirect_if_unauthorized(conn = %Plug.Conn{assigns: %{authorized: true}}, opts), do: conn
 ```
 and then calling the plug after any authorization plugs:
 
