@@ -37,10 +37,15 @@ defmodule Canary.Plugs do
   If the resource cannot be fetched, `conn.assigns.resource_name` is set
   to nil.
 
-  If the action is `:index`, all records from the specified model will be loaded.
+  The `:persisted` key can override how a resource is loaded and can be useful when dealing
+  with nested resources.
+
+  If the action is `:index`, all records from the specified model will be loaded. This can
+  be overridden to fetch a single record from the database by using the `:persisted` key.
 
   Currently, `:new` and `:create` actions are ignored, and `conn.assigns.resource_name`
-  will be set to nil for these actions.
+  will be set to nil for these actions. This can be overridden to fetch from the database
+  by using the `:persisted` key.
 
   Required opts:
 
@@ -53,6 +58,7 @@ defmodule Canary.Plugs do
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
   * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
+  * `:persisted` - Specifies the resource should always be loaded from the database, defaults to false
 
   Examples:
   ```
@@ -63,6 +69,8 @@ defmodule Canary.Plugs do
   plug :load_resource, model: User, only: [:index, :show], preload: :posts, as: :person
 
   plug :load_resource, model: User, except: [:destroy]
+
+  plug :load_resource, model: Post, id_name: "post_id", only: [:new, :create], persisted: true
   ```
   """
   def load_resource(conn, opts) do
@@ -107,7 +115,9 @@ defmodule Canary.Plugs do
   If authorization fails, sets `conn.assigns.authorized` to false.
 
   For the `:index`, `:new`, and `:create` actions, the resource in the `Canada.Can` implementation
-  should be the module name of the model rather than a struct.
+  should be the module name of the model rather than a struct. A struct should be used instead of
+  the module name only if the `:persisted` key is used and you want to override the default
+  authorization behavior.  This can be useful when dealing with nested resources.
 
   For example:
 
@@ -120,6 +130,15 @@ defmodule Canary.Plugs do
     def can?(%User{}, :index, %Post{}), do: true
     ```
 
+    or
+
+    use
+    ```
+    def can?(%User{id: user_id}, :index, %Post{user_id: user_id}), do: true
+    ```
+
+    if you are dealing with a nested resource, such as, "/post/post_id/comments"
+
   Required opts:
 
   * `:model` - Specifies the module name of the model to authorize access to
@@ -130,6 +149,7 @@ defmodule Canary.Plugs do
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
   * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
+  * `:persisted` - Specifies the resource should always be loaded from the database, defaults to false
 
   Examples:
   ```
@@ -138,6 +158,8 @@ defmodule Canary.Plugs do
   plug :authorize_resource, model: User, preload: :posts
 
   plug :authorize_resource, model: User, only: [:index, :show], preload: :posts
+
+  plug :load_resource, model: Post, id_name: "post_id", only: [:index], persisted: true, preload: :comments
   ```
   """
   def authorize_resource(conn, opts) do
@@ -153,11 +175,14 @@ defmodule Canary.Plugs do
     current_user_name = opts[:current_user] || Application.get_env(:canary, :current_user, :current_user)
     current_user = Dict.fetch! conn.assigns, current_user_name
     action = get_action(conn)
+    is_persisted = get_persisted(opts)
 
     resource = cond do
+      is_persisted ->
+        fetch_resource(conn, opts)
       action in [:index, :new, :create] ->
         opts[:model]
-      true      ->
+      true ->
         fetch_resource(conn, opts)
     end
 

@@ -31,7 +31,7 @@ end
 defimpl Canada.Can, for: User do
 
   def can?(%User{id: user_id}, action, %Post{user_id: user_id})
-  when action in [:show], do: true
+  when action in [:index, :show, :new, :create], do: true
 
   def can?(%User{}, :index, Post), do: true
 
@@ -323,6 +323,60 @@ defmodule PlugTest do
     assert authorize_resource(conn, opts) == expected
   end
 
+  test "it authorizes the resource correctly with opts[:persisted] specified on :index action" do
+    opts = [model: Post, id_name: "post_id", persisted: true]
+
+    params = %{"post_id" => 2}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :index},
+        assigns: %{current_user: %User{id: 2}}
+      },
+      :get,
+      "/posts/post_id/comments",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+  end
+
+  test "it authorizes the resource correctly with opts[:persisted] specified on :new action" do
+    opts = [model: Post, id_name: "post_id", persisted: true]
+
+    params = %{"post_id" => 2}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :new},
+        assigns: %{current_user: %User{id: 2}}
+      },
+      :get,
+      "/posts/post_id/comments/new",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+  end
+
+  test "it authorizes the resource correctly with opts[:persisted] specified on :create action" do
+    opts = [model: Post, id_name: "post_id", persisted: true]
+
+    params = %{"post_id" => 2}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :create},
+        assigns: %{current_user: %User{id: 2}}
+      },
+      :post,
+      "/posts/post_id/comments",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+  end
+
   test "it loads and authorizes the resource correctly" do
     opts = [model: Post]
 
@@ -411,6 +465,62 @@ defmodule PlugTest do
     assert load_and_authorize_resource(conn, opts) == expected
   end
 
+  test "it loads and authorizes the resource correctly with opts[:persisted] specified on :index action" do
+    opts = [model: Post, id_name: "post_id", persisted: true]
+
+    params = %{"post_id" => 2}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :index},
+        assigns: %{current_user: %User{id: 2}}
+      },
+      :get,
+      "/posts/2/comments",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 2, user_id: 2})}
+
+    assert load_and_authorize_resource(conn, opts) == expected
+  end
+
+  test "it loads and authorizes the resource correctly with opts[:persisted] specified on :new action" do
+    opts = [model: Post, id_name: "post_id", persisted: true]
+
+    params = %{"post_id" => 2}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :new},
+        assigns: %{current_user: %User{id: 2}}
+      },
+      :get,
+      "/posts/2/comments/new",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 2, user_id: 2})}
+
+    assert load_and_authorize_resource(conn, opts) == expected
+  end
+
+  test "it loads and authorizes the resource correctly with opts[:persisted] specified on :create action" do
+    opts = [model: Post, id_name: "post_id", persisted: true]
+
+    params = %{"post_id" => 2}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :create},
+        assigns: %{current_user: %User{id: 2}}
+      },
+      :create,
+      "/posts/2/comments",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 2, user_id: 2})}
+
+    assert load_and_authorize_resource(conn, opts) == expected
+  end
 
   test "it only loads the resource when the action is in opts[:only]" do
     # when the action is in opts[:only]
@@ -446,8 +556,7 @@ defmodule PlugTest do
 
     assert load_resource(conn, opts) == expected
   end
-
-
+  
   test "it only authorizes actions in opts[:only]" do
     # when the action is in opts[:only]
     opts = [model: Post, only: :show]
