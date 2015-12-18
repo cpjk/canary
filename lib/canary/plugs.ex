@@ -37,15 +37,15 @@ defmodule Canary.Plugs do
   If the resource cannot be fetched, `conn.assigns.resource_name` is set
   to nil.
 
-  The `:persisted` key can override how a resource is loaded and can be useful when dealing
-  with nested resources.
-
-  If the action is `:index`, all records from the specified model will be loaded. This can
+  By default, when the action is `:index`, all records from the specified model will be loaded. This can
   be overridden to fetch a single record from the database by using the `:persisted` key.
 
   Currently, `:new` and `:create` actions are ignored, and `conn.assigns.resource_name`
-  will be set to nil for these actions. This can be overridden to fetch from the database
+  will be set to nil for these actions. This can be overridden to fetch a single record from the database
   by using the `:persisted` key.
+
+  The `:persisted` key can override how a resource is loaded and can be useful when dealing
+  with nested resources.
 
   Required opts:
 
@@ -84,7 +84,7 @@ defmodule Canary.Plugs do
 
   defp _load_resource(conn, opts) do
     action = get_action(conn)
-    is_persisted = get_persisted(opts)
+    is_persisted = persisted?(opts)
 
     loaded_resource = cond do
       is_persisted ->
@@ -175,7 +175,7 @@ defmodule Canary.Plugs do
     current_user_name = opts[:current_user] || Application.get_env(:canary, :current_user, :current_user)
     current_user = Dict.fetch! conn.assigns, current_user_name
     action = get_action(conn)
-    is_persisted = get_persisted(opts)
+    is_persisted = persisted?(opts)
 
     resource = cond do
       is_persisted ->
@@ -353,8 +353,8 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp get_persisted(opts) do
-    Keyword.get(opts, :persisted, false)
+  defp persisted?(opts) do
+    !!Keyword.get(opts, :persisted, false)
   end
 
   defp resource_name(conn, opts) do
@@ -371,7 +371,7 @@ defmodule Canary.Plugs do
   end
 
   defp pluralize_if_needed(name, conn, opts) do
-    if get_action(conn) in [:index] and not get_persisted(opts) do
+    if get_action(conn) in [:index] and not persisted?(opts) do
       name <> "s"
     else
       name
