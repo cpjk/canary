@@ -257,24 +257,38 @@ defmodule Canary.Plugs do
     id = get_resource_id(conn, opts)
 
     conn.assigns
-    |> Map.fetch(resource_name(conn, opts))
+    |> Map.fetch(resource_name(conn, opts)) # check if a resource is already loaded at the key
     |> case do
       :error ->
         repo.get(opts[:model], id)
+        |> maybe_call_not_found_action(conn)
         |> preload_if_needed(repo, opts)
       {:ok, nil} ->
         repo.get(opts[:model], id)
+        |> maybe_call_not_found_action(conn)
         |> preload_if_needed(repo, opts)
-      {:ok, resource} -> # if there is already a resource loaded onto the conn
+      {:ok, resource} ->
         case (resource.__struct__ == opts[:model]) do
-          true  ->
+          true  -> # A resource of the type passed as opts[:model] is already loaded; do not clobber it
             resource
           false ->
             repo.get(opts[:model], id)
+            |> maybe_call_not_found_action(conn)
             |> preload_if_needed(repo, opts)
         end
     end
   end
+
+  # Call the not_found_action if configured.
+  # Otherwise, pass through the empty resource
+  defp maybe_call_not_found_action(resource, conn) when resource in [nil, []] do
+    case Application.get_env(:canary, :not_found_action, nil) do
+      {module, function} -> apply(module, function, [conn])
+      _                  -> nil
+    end
+  end
+
+  defp maybe_call_not_found_action(resource, _conn), do: resource
 
   defp get_resource_id(conn, opts) do
     case opts[:id_name] do
@@ -290,15 +304,17 @@ defmodule Canary.Plugs do
 
     conn
     |> Map.fetch(resource_name(conn, opts))
-    |> case do
+    |> case do # check if a resource is already loaded at the key
       :error ->
         from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
+        |> maybe_call_not_found_action(conn)
       {:ok, resource} ->
         case (resource.__struct__ == opts[:model]) do
           true  ->
             resource
           false ->
             from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
+            |> maybe_call_not_found_action(conn)
         end
     end
   end
