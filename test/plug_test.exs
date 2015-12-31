@@ -48,8 +48,15 @@ defimpl Canada.Can, for: Atom do
   def can?(nil, :create, Post), do: false
 end
 
+defmodule Helpers do
+  def put_not_found(conn) do
+    conn
+    |> Map.put(:not_found_action_called, true)
+  end
+end
 
 defmodule PlugTest do
+  require IEx
   import Canary.Plugs
 
   import Plug.Adapters.Test.Conn, only: [conn: 4]
@@ -822,6 +829,26 @@ defmodule PlugTest do
     assert load_resource(conn, opts) == expected
   end
 
+  test "when the resource cannot be found, it calls the configured action" do
+    # opts = [model: Post, not_found_action: {Helpers, :put_not_found}]
+
+    # params = %{"id" => 3} # nonexistant resource
+    # conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/3", params)
+    # # expected = Helpers.put_not_found(conn)
+    # IEx.pry
+    # derp = load_resource(conn, opts)
+
+    ####
+
+    opts = [model: Post, not_found_action: {Helpers, :put_not_found}]
+
+    params = %{"id" => 3}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/3", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
+
+    assert load_resource(conn, opts) == expected
+    # assert load_resource(conn, opts) == expected
+  end
 
   defmodule CurrentUser do
     use ExUnit.Case, async: true

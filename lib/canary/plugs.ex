@@ -3,6 +3,7 @@ defmodule Canary.Plugs do
   import Canada.Can, only: [can?: 3]
   import Ecto.Query
   import Keyword, only: [has_key?: 2]
+  require IEx
 
   @moduledoc """
   Plug functions for loading and authorizing resources for the current request.
@@ -19,6 +20,23 @@ defmodule Canary.Plugs do
   ```
   config :canary, current_user: :some_current_user
   ```
+
+  By default, when a resource cannot be found, Canary simply returns `nil` for the resource.
+  However, you can configure a function to be called when a resource cannot be found. Canary will pass the `Plug.Conn` to the given function. The handler should accept a `Plug.Conn` as its only argument, and should return a `Plug.Conn`.
+
+  For example, to have Canary call `Helpers.not_found_function/1`:
+
+  ```elixir
+  config :canary, not_found_handler: {Helpers, :not_found_function}
+  ```
+
+  You can also specify the `:not_found_handler` on an individual basis by specifying the `:not_found_handler` `opt` in the plug call like so:
+
+  ```elixir
+  plug :load_and_authorize_resource Post, not_found_handler: {Helpers, :not_found_function}
+  ```
+
+  Tip: If you wish the request handling to stop after the handler function exits, e.g. when redirecting, be sure to call `Plug.Conn.halt/1` within your handler.
   """
 
   @doc """
@@ -98,6 +116,7 @@ defmodule Canary.Plugs do
     end
 
     %{conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), loaded_resource)}
+    |> handle_not_found(opts)
   end
 
   @doc """
@@ -192,6 +211,7 @@ defmodule Canary.Plugs do
       false ->
         %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
     end
+    |> handle_not_found(opts)
   end
 
   @doc """
@@ -261,11 +281,9 @@ defmodule Canary.Plugs do
     |> case do
       :error ->
         repo.get(opts[:model], id)
-        |> maybe_call_not_found_action(conn)
         |> preload_if_needed(repo, opts)
       {:ok, nil} ->
         repo.get(opts[:model], id)
-        |> maybe_call_not_found_action(conn)
         |> preload_if_needed(repo, opts)
       {:ok, resource} ->
         case (resource.__struct__ == opts[:model]) do
@@ -273,22 +291,35 @@ defmodule Canary.Plugs do
             resource
           false ->
             repo.get(opts[:model], id)
-            |> maybe_call_not_found_action(conn)
             |> preload_if_needed(repo, opts)
         end
     end
   end
 
-  # Call the not_found_action if configured.
-  # Otherwise, pass through the empty resource
-  defp maybe_call_not_found_action(resource, conn) when resource in [nil, []] do
-    case Application.get_env(:canary, :not_found_action, nil) do
-      {module, function} -> apply(module, function, [conn])
-      _                  -> nil
+  defp resource_from_conn(conn, opts) do
+    conn.assigns
+    |> Map.fetch(resource_name(conn, opts))
+    |> case do
+      {:ok, resource} -> resource
+      {:error} -> :error
     end
   end
 
-  defp maybe_call_not_found_action(resource, _conn), do: resource
+  # If the resource in the conn is nil and not_found_handler is specified,
+  # call the not_found_handler. Otherwise, return the conn
+  defp handle_not_found(conn, opts) do
+    not_found_handler = Keyword.get(opts, :not_found_handler)
+      || Application.get_env(:canary, :not_found_handler)
+    resource = resource_from_conn(conn, opts)
+    maybe_call_not_found_handler(conn, resource, not_found_handler)
+  end
+
+  # Call the not_found_handler if the resource is nil
+  defp maybe_call_not_found_handler(conn, resource, {mod, fun}) when resource in [nil, []] do
+    apply(mod, fun, [conn])
+  end
+
+  defp maybe_call_not_found_handler(conn, resource, _not_found_handler), do: conn
 
   defp get_resource_id(conn, opts) do
     case opts[:id_name] do
@@ -307,14 +338,14 @@ defmodule Canary.Plugs do
     |> case do # check if a resource is already loaded at the key
       :error ->
         from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
-        |> maybe_call_not_found_action(conn)
+        # |> maybe_call_not_found_action(conn, opts)
       {:ok, resource} ->
         case (resource.__struct__ == opts[:model]) do
           true  ->
             resource
           false ->
             from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
-            |> maybe_call_not_found_action(conn)
+            # |> maybe_call_not_found_action(conn, opts)
         end
     end
   end
