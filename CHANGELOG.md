@@ -1,5 +1,10 @@
 ## Changelog
 
+## v0.12.0
+
+* Enhancements
+  * Canary can now be configured to call a user-defined function when an action is unauthorized
+
 ## v0.11.0
 
 * Enhancements
