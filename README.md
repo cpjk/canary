@@ -11,6 +11,7 @@ Inspired by [CanCan](https://github.com/CanCanCommunity/cancancan) for Ruby on R
 [Read the docs](http://hexdocs.pm/canary)
 
 ## Installation
+
 For the latest master:
 
 ```elixir
@@ -46,6 +47,7 @@ config :canary, repo: Project.Repo
 ```
 
 #### load_resource/2
+
 Loads the resource having the id given in `conn.params["id"]` from the database using the given Ecto repo and model, and assigns the resource to `conn.assigns.<resource_name>`, where `resource_name` is inferred from the model name.
 
 For example,
@@ -57,6 +59,7 @@ Will load the `Project.User` having the id given in `conn.params["id"]` through 
 `conn.assigns.user`
 
 #### authorize_resource/2
+
 Checks whether or not the `current_user` can perform the given action on the given resource and assigns the result (true/false) to `conn.assigns.authorized`. It is up to you to decide what to do with the result.
 
 For Phoenix applications, Canary determines the action automatically.
@@ -66,11 +69,13 @@ For non-Phoenix applications, or to override the action provided by Phoenix, sim
 In order to authorize resources, you must specify permissions by implementing the [Canada.Can protocol](https://github.com/jarednorman/canada) for your `User` model (Canada is included as a light weight dependency).
 
 #### load_and_authorize_resource/2
+
 Authorizes the resource and then loads it if authorization succeeds. Again, the resource is loaded into `conn.assigns.<resource_name>`.
 
 In the following example, the `User` with the same id as the `current_user` is only loaded if authorization succeeds.
 
 #### Example
+
 Let's say you have a Phoenix application with a `User` model, and you want to authorize the `current_user` for accessing `User` resources.
 
 Let's suppose that you have implemented Canada.Can in your `abilities.ex` like so:
@@ -102,7 +107,7 @@ In this case, on `GET /users/12` authorization succeeds, and the `Project.User` 
 
 However, on `DELETE /users/12`, authorization fails and the resource is not loaded.
 
-#### Excluding actions ####
+#### Excluding actions
 
 To exclude an action from any of the plugs, pass the `:except` key, with a single action or list of actions.
 
@@ -117,7 +122,7 @@ List form:
 plug :load_and_authorize_resource, model: Project.User, except: [:show, :create]
 ```
 
-#### Authorizing only specific actions ####
+#### Authorizing only specific actions
 
 To specify that a plug should be run only for a specific list of actions, pass the `:only` key, with a single action or list of actions.
 
@@ -227,6 +232,24 @@ For example, when loading and authorizing a `Post` resource which can have one o
 
 to load and authorize the parent `Post` resource using the `post_id` in /posts/:post_id/comments before you
 create the `Comment` resource using its parent.
+
+#### Handling unauthorized actions
+  By default, when an action is unauthorized, Canary simply sets `conn.assigns.authorized` to `false`.
+  However, you can configure a handler function to be called when authorization fails. Canary will pass the `Plug.Conn` to the given function. The handler should accept a `Plug.Conn` as its only argument, and should return a `Plug.Conn`.
+
+  For example, to have Canary call `Helpers.handle_unauthorized/1`:
+
+  ```elixir
+  config :canary, :unauthorized_handler {Helpers, :handle_unauthorized}
+  ```
+
+  You can also specify the `:unauthorized_handler` on an individual basis by specifying the `:unauthorized_handler` `opt` in the plug call like so:
+
+  ```elixir
+  plug :load_and_authorize_resource Post, unauthorized_handler: {Helpers, :handle_unauthorized}
+  ```
+
+  Tip: If you wish the request handling to stop after the handler function exits, e.g. when redirecting, be sure to call `Plug.Conn.halt/1` within your handler.
 
 ## License
 MIT License. Copyright 2015 Chris Kelly.

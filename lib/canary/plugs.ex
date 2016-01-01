@@ -21,22 +21,10 @@ defmodule Canary.Plugs do
   config :canary, current_user: :some_current_user
   ```
 
-  By default, when a resource cannot be found, Canary simply returns `nil` for the resource.
-  However, you can configure a function to be called when a resource cannot be found. Canary will pass the `Plug.Conn` to the given function. The handler should accept a `Plug.Conn` as its only argument, and should return a `Plug.Conn`.
-
-  For example, to have Canary call `Helpers.not_found_function/1`:
-
+  You can specify a handler function to be called when an action is unauthorized like so:
   ```elixir
-  config :canary, not_found_handler: {Helpers, :not_found_function}
+  config :canary, :unauthorized_handler {Helpers, :handle_unauthorized}
   ```
-
-  You can also specify the `:not_found_handler` on an individual basis by specifying the `:not_found_handler` `opt` in the plug call like so:
-
-  ```elixir
-  plug :load_and_authorize_resource Post, not_found_handler: {Helpers, :not_found_function}
-  ```
-
-  Tip: If you wish the request handling to stop after the handler function exits, e.g. when redirecting, be sure to call `Plug.Conn.halt/1` within your handler.
   """
 
   @doc """
@@ -168,6 +156,7 @@ defmodule Canary.Plugs do
   * `:preload` - Specifies association(s) to preload
   * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
   * `:persisted` - Specifies the resource should always be loaded from the database, defaults to false
+  * `:unauthorized_handler` - Specify a handler function to call if the action is unauthorized
 
   Examples:
   ```
@@ -236,6 +225,7 @@ defmodule Canary.Plugs do
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
   * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
+  * `:unauthorized_handler` - Specify a handler function to call if the action is unauthorized
 
   Examples:
   ```
