@@ -10,7 +10,7 @@ Inspired by [CanCan](https://github.com/CanCanCommunity/cancancan) for Ruby on R
 
 [Read the docs](http://hexdocs.pm/canary)
 
-## Installation ##
+## Installation
 For the latest master:
 
 ```elixir
