@@ -3,7 +3,6 @@ defmodule Canary.Plugs do
   import Canada.Can, only: [can?: 3]
   import Ecto.Query
   import Keyword, only: [has_key?: 2]
-  require IEx
 
   @moduledoc """
   Plug functions for loading and authorizing resources for the current request.

@@ -49,7 +49,6 @@ defimpl Canada.Can, for: Atom do
 end
 
 defmodule Helpers do
-  require IEx
   def unauthorized_handler(conn) do
     conn
     |> Map.put(:unauthorized_handler_called, true)
@@ -57,7 +56,6 @@ defmodule Helpers do
 end
 
 defmodule PlugTest do
-  require IEx
   import Canary.Plugs
 
   import Plug.Adapters.Test.Conn, only: [conn: 4]
