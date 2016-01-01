@@ -240,7 +240,7 @@ create the `Comment` resource using its parent.
   For example, to have Canary call `Helpers.handle_unauthorized/1`:
 
   ```elixir
-  config :canary, :unauthorized_handler {Helpers, :handle_unauthorized}
+  config :canary, unauthorized_handler: {Helpers, :handle_unauthorized}
   ```
 
   You can also specify the `:unauthorized_handler` on an individual basis by specifying the `:unauthorized_handler` `opt` in the plug call like so:

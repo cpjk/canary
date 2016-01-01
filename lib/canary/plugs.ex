@@ -23,7 +23,7 @@ defmodule Canary.Plugs do
 
   You can specify a handler function to be called when an action is unauthorized like so:
   ```elixir
-  config :canary, :unauthorized_handler {Helpers, :handle_unauthorized}
+  config :canary, unauthorized_handler: {Helpers, :handle_unauthorized}
   ```
   """
 
