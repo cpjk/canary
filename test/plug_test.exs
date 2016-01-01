@@ -49,9 +49,10 @@ defimpl Canada.Can, for: Atom do
 end
 
 defmodule Helpers do
-  def put_not_found(conn) do
+  require IEx
+  def unauthorized_handler(conn) do
     conn
-    |> Map.put(:not_found_action_called, true)
+    |> Map.put(:unauthorized_handler_called, true)
   end
 end
 
@@ -829,25 +830,50 @@ defmodule PlugTest do
     assert load_resource(conn, opts) == expected
   end
 
-  test "when the resource cannot be found, it calls the configured action" do
-    # opts = [model: Post, not_found_action: {Helpers, :put_not_found}]
+  test "when unauthorized, it calls the specified action" do
+    opts = [model: Post, unauthorized_handler: {Helpers, :unauthorized_handler}]
 
-    # params = %{"id" => 3} # nonexistant resource
-    # conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/3", params)
-    # # expected = Helpers.put_not_found(conn)
-    # IEx.pry
-    # derp = load_resource(conn, opts)
+    params = %{"id" => 1}
+    conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
+                           private: %{phoenix_action: :show}}, :get, "/posts/1", params)
+    expected = Map.put(conn, :unauthorized_handler_called, true)
+    expected = %{expected | assigns: Map.put(expected.assigns, :authorized, false)}
 
-    ####
+    assert authorize_resource(conn, opts) == expected
+  end
 
-    opts = [model: Post, not_found_action: {Helpers, :put_not_found}]
+  defmodule UnauthorizedHandlerConfigured do
+    use ExUnit.Case, async: false
 
-    params = %{"id" => 3}
-    conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/3", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
+    test "when unauthorized, it calls the configured action" do
+      Application.put_env(:canary, :unauthorized_handler, {Helpers, :unauthorized_handler})
+      opts = [model: Post]
 
-    assert load_resource(conn, opts) == expected
-    # assert load_resource(conn, opts) == expected
+      params = %{"id" => 1}
+      conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
+        private: %{phoenix_action: :show}}, :get, "/posts/1", params)
+      expected = Map.put(conn, :unauthorized_handler_called, true)
+      expected = %{expected | assigns: Map.put(expected.assigns, :authorized, false)}
+
+      assert authorize_resource(conn, opts) == expected
+    end
+  end
+
+  defmodule UnauthorizedHandlerConfiguredAndSpecified do
+    use ExUnit.Case, async: false
+
+    test "when unauthorized, it calls the opt-specified action rather than the configured action" do
+      Application.put_env(:canary, :unauthorized_handler, {Helpers, :does_not_exist}) # should not be called
+      opts = [model: Post, unauthorized_handler: {Helpers, :unauthorized_handler}]
+
+      params = %{"id" => 1}
+      conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
+        private: %{phoenix_action: :show}}, :get, "/posts/1", params)
+      expected = Map.put(conn, :unauthorized_handler_called, true)
+      expected = %{expected | assigns: Map.put(expected.assigns, :authorized, false)}
+
+      assert authorize_resource(conn, opts) == expected
+    end
   end
 
   defmodule CurrentUser do

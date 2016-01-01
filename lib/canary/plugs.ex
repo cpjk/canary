@@ -116,7 +116,6 @@ defmodule Canary.Plugs do
     end
 
     %{conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), loaded_resource)}
-    |> handle_not_found(opts)
   end
 
   @doc """
@@ -185,7 +184,7 @@ defmodule Canary.Plugs do
     conn
     |> action_valid?(opts)
     |> case do
-      true  -> _authorize_resource(conn, opts)
+      true  -> _authorize_resource(conn, opts) |> handle_unauthorized(opts)
       false -> conn
     end
   end
@@ -211,7 +210,6 @@ defmodule Canary.Plugs do
       false ->
         %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
     end
-    |> handle_not_found(opts)
   end
 
   @doc """
@@ -296,30 +294,17 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp resource_from_conn(conn, opts) do
-    conn.assigns
-    |> Map.fetch(resource_name(conn, opts))
-    |> case do
-      {:ok, resource} -> resource
-      {:error} -> :error
+  defp handle_unauthorized(conn = %{assigns: %{authorized: false}}, opts) do
+    unauthorized_handler = Keyword.get(opts, :unauthorized_handler)
+      || Application.get_env(:canary, :unauthorized_handler)
+
+    case unauthorized_handler do
+      {mod, fun} -> apply(mod, fun, [conn])
+      nil        -> conn
     end
   end
 
-  # If the resource in the conn is nil and not_found_handler is specified,
-  # call the not_found_handler. Otherwise, return the conn
-  defp handle_not_found(conn, opts) do
-    not_found_handler = Keyword.get(opts, :not_found_handler)
-      || Application.get_env(:canary, :not_found_handler)
-    resource = resource_from_conn(conn, opts)
-    maybe_call_not_found_handler(conn, resource, not_found_handler)
-  end
-
-  # Call the not_found_handler if the resource is nil
-  defp maybe_call_not_found_handler(conn, resource, {mod, fun}) when resource in [nil, []] do
-    apply(mod, fun, [conn])
-  end
-
-  defp maybe_call_not_found_handler(conn, resource, _not_found_handler), do: conn
+  defp handle_unauthorized(conn = %{assigns: %{authorized: true}}, opts), do: conn
 
   defp get_resource_id(conn, opts) do
     case opts[:id_name] do
@@ -338,14 +323,12 @@ defmodule Canary.Plugs do
     |> case do # check if a resource is already loaded at the key
       :error ->
         from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
-        # |> maybe_call_not_found_action(conn, opts)
       {:ok, resource} ->
         case (resource.__struct__ == opts[:model]) do
           true  ->
             resource
           false ->
             from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
-            # |> maybe_call_not_found_action(conn, opts)
         end
     end
   end
