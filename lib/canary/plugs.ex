@@ -293,7 +293,7 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp handle_unauthorized(conn = %{assigns: %{authorized: true}}, opts), do: conn
+  defp handle_unauthorized(conn = %{assigns: %{authorized: true}}, _opts), do: conn
 
   defp get_resource_id(conn, opts) do
     case opts[:id_name] do
