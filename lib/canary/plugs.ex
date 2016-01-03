@@ -283,27 +283,6 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp handle_unauthorized(conn = %{assigns: %{authorized: false}}, opts) do
-    unauthorized_handler = Keyword.get(opts, :unauthorized_handler)
-      || Application.get_env(:canary, :unauthorized_handler)
-
-    case unauthorized_handler do
-      {mod, fun} -> apply(mod, fun, [conn])
-      nil        -> conn
-    end
-  end
-
-  defp handle_unauthorized(conn = %{assigns: %{authorized: true}}, _opts), do: conn
-
-  defp get_resource_id(conn, opts) do
-    case opts[:id_name] do
-      nil ->
-        conn.params["id"]
-      id_name ->
-        conn.params[id_name]
-    end
-  end
-
   defp fetch_all(conn, opts) do
     repo = Application.get_env(:canary, :repo)
 
@@ -319,6 +298,15 @@ defmodule Canary.Plugs do
           false ->
             from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
         end
+    end
+  end
+
+  defp get_resource_id(conn, opts) do
+    case opts[:id_name] do
+      nil ->
+        conn.params["id"]
+      id_name ->
+        conn.params[id_name]
     end
   end
 
@@ -407,4 +395,16 @@ defmodule Canary.Plugs do
         repo.preload(records, models)
     end
   end
+
+  defp handle_unauthorized(conn = %{assigns: %{authorized: false}}, opts) do
+    unauthorized_handler = Keyword.get(opts, :unauthorized_handler)
+      || Application.get_env(:canary, :unauthorized_handler)
+
+    case unauthorized_handler do
+      {mod, fun} -> apply(mod, fun, [conn])
+      nil        -> conn
+    end
+  end
+
+  defp handle_unauthorized(conn = %{assigns: %{authorized: true}}, _opts), do: conn
 end
