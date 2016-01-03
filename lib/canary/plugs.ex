@@ -1,5 +1,4 @@
 defmodule Canary.Plugs do
-  require Logger
   import Canada.Can, only: [can?: 3]
   import Ecto.Query
   import Keyword, only: [has_key?: 2]
@@ -315,15 +314,7 @@ defmodule Canary.Plugs do
     |> Map.fetch(:canary_action)
     |> case do
       {:ok, action} -> action
-      _             ->
-        conn.assigns
-        |> Map.fetch(:action)
-        |> case do
-          {:ok, action} ->
-            Logger.warn("WARNING: The conn.assigns.action key is deprecated in favour of conn.assigns.canary_action")
-            action
-          _             -> conn.private.phoenix_action
-        end
+      _             -> conn.private.phoenix_action
     end
   end
 
