@@ -1,5 +1,4 @@
 defmodule Canary.Plugs do
-  require Logger
   import Canada.Can, only: [can?: 3]
   import Ecto.Query
   import Keyword, only: [has_key?: 2]
@@ -283,27 +282,6 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp handle_unauthorized(conn = %{assigns: %{authorized: false}}, opts) do
-    unauthorized_handler = Keyword.get(opts, :unauthorized_handler)
-      || Application.get_env(:canary, :unauthorized_handler)
-
-    case unauthorized_handler do
-      {mod, fun} -> apply(mod, fun, [conn])
-      nil        -> conn
-    end
-  end
-
-  defp handle_unauthorized(conn = %{assigns: %{authorized: true}}, opts), do: conn
-
-  defp get_resource_id(conn, opts) do
-    case opts[:id_name] do
-      nil ->
-        conn.params["id"]
-      id_name ->
-        conn.params[id_name]
-    end
-  end
-
   defp fetch_all(conn, opts) do
     repo = Application.get_env(:canary, :repo)
 
@@ -322,20 +300,21 @@ defmodule Canary.Plugs do
     end
   end
 
+  defp get_resource_id(conn, opts) do
+    case opts[:id_name] do
+      nil ->
+        conn.params["id"]
+      id_name ->
+        conn.params[id_name]
+    end
+  end
+
   defp get_action(conn) do
     conn.assigns
     |> Map.fetch(:canary_action)
     |> case do
       {:ok, action} -> action
-      _             ->
-        conn.assigns
-        |> Map.fetch(:action)
-        |> case do
-          {:ok, action} ->
-            Logger.warn("WARNING: The conn.assigns.action key is deprecated in favour of conn.assigns.canary_action")
-            action
-          _             -> conn.private.phoenix_action
-        end
+      _             -> conn.private.phoenix_action
     end
   end
 
@@ -407,4 +386,16 @@ defmodule Canary.Plugs do
         repo.preload(records, models)
     end
   end
+
+  defp handle_unauthorized(conn = %{assigns: %{authorized: false}}, opts) do
+    unauthorized_handler = Keyword.get(opts, :unauthorized_handler)
+      || Application.get_env(:canary, :unauthorized_handler)
+
+    case unauthorized_handler do
+      {mod, fun} -> apply(mod, fun, [conn])
+      nil        -> conn
+    end
+  end
+
+  defp handle_unauthorized(conn = %{assigns: %{authorized: true}}, _opts), do: conn
 end
