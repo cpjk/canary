@@ -3,7 +3,15 @@
 ## v0.12.0
 
 * Enhancements
-  * Canary can now be configured to call a user-defined function when an action is unauthorized
+  * Canary can now be configured to call a user-defined function when authorization fails. Canary will pass the `Plug.Conn` for the request to the given function. The handler should accept a `Plug.Conn` as its only argument, and should return a `Plug.Conn`.
+    * For example, to have Canary call `Helpers.handle_unauthorized/1`:
+    ```elixir
+    config :canary, unauthorized_handler: {Helpers, :handle_unauthorized}
+    ```
+    * You can also specify the `:unauthorized_handler` on an individual basis by specifying the `:unauthorized_handler`   `opt` in the plug call like so:
+    ```elixir
+    plug :load_and_authorize_resource Post, unauthorized_handler: {Helpers, :handle_unauthorized}
+    ```
 
 ## v0.11.0
 
