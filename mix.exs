@@ -13,6 +13,7 @@ defmodule Canary.Mixfile do
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps,
+     consolidate_protocols: false,
      docs: [extras: ["README.md"]]]
   end
 
