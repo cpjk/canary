@@ -6,7 +6,7 @@ defmodule Canary.Plugs do
   @moduledoc """
   Plug functions for loading and authorizing resources for the current request.
 
-  Plugs all store data in conn.assigns (in Phoenix applications, keys in conn.assigns can be accessed with `@key_name` in both views and controllers)
+  The plugs all store data in conn.assigns (in Phoenix applications, keys in conn.assigns can be accessed with `@key_name` in templates)
 
   In order to use the plug functions, you must `use Canary`.
 
