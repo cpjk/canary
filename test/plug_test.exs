@@ -53,6 +53,11 @@ defmodule Helpers do
     conn
     |> Map.put(:unauthorized_handler_called, true)
   end
+
+  def not_found_handler(conn) do
+    conn
+    |> Map.put(:not_found_handler_called, true)
+  end
 end
 
 defmodule PlugTest do
@@ -840,6 +845,17 @@ defmodule PlugTest do
     assert authorize_resource(conn, opts) == expected
   end
 
+  test "when not_found, it calls the specified action" do
+    opts = [model: Post, not_found_handler: {Helpers, :not_found_handler}]
+
+    params = %{"id" => 3}
+    conn = conn(%Plug.Conn{assigns: %{post: nil}, private: %{phoenix_action: :show}}, :get, "/posts/3", params)
+
+    expected = Map.put(conn, :not_found_handler_called, true)
+
+    assert load_resource(conn, opts) == expected
+  end
+
   defmodule UnauthorizedHandlerConfigured do
     use ExUnit.Case, async: false
 
@@ -873,6 +889,39 @@ defmodule PlugTest do
       assert authorize_resource(conn, opts) == expected
     end
   end
+
+  defmodule NotFoundHandlerConfigured do
+    use ExUnit.Case, async: false
+
+    test "when not_found, it calls the configured action" do
+      Application.put_env(:canary, :not_found_handler, {Helpers, :not_found_handler})
+      opts = [model: Post]
+
+      params = %{"id" => 4}
+      conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/4", params)
+      expected = Map.put(conn, :not_found_handler_called, true)
+      expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+
+      assert load_resource(conn, opts) == expected
+    end
+  end
+
+  defmodule NotFoundHandlerConfiguredAndSpecified do
+    use ExUnit.Case, async: false
+
+    test "when not_found, it calls the opt-specified action rather than the configured action" do
+      Application.put_env(:canary, :not_found_handler, {Helpers, :does_not_exist}) # should not be called
+      opts = [model: Post, not_found_handler: {Helpers, :not_found_handler}]
+
+      params = %{"id" => 4}
+      conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/4", params)
+      expected = Map.put(conn, :not_found_handler_called, true)
+      expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+
+      assert load_resource(conn, opts) == expected
+    end
+  end
+
 
   defmodule CurrentUser do
     use ExUnit.Case, async: true

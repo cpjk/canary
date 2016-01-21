@@ -81,7 +81,7 @@ defmodule Canary.Plugs do
     conn
     |> action_valid?(opts)
     |> case do
-      true  -> _load_resource(conn, opts)
+      true  -> _load_resource(conn, opts) |> handle_not_found(opts)
       false -> conn
     end
   end
@@ -387,15 +387,25 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp handle_unauthorized(conn = %{assigns: %{authorized: false}}, opts) do
-    unauthorized_handler = Keyword.get(opts, :unauthorized_handler)
-      || Application.get_env(:canary, :unauthorized_handler)
+  defp handle_unauthorized(conn = %{assigns: %{authorized: false}}, opts), do: apply_error_handler(conn, :unauthorized_handler, opts)
+  defp handle_unauthorized(conn = %{assigns: %{authorized: true}}, _opts), do: conn
 
-    case unauthorized_handler do
+  defp handle_not_found(conn, opts) do
+    action = get_action(conn)
+
+    case is_nil(Map.get(conn.assigns, resource_name(conn, opts))) and not action in [:index, :new, :create] do
+      true -> apply_error_handler(conn, :not_found_handler, opts)
+      false -> conn
+    end
+  end
+
+  defp apply_error_handler(conn, handler_key, opts) do
+    handler = Keyword.get(opts, handler_key)
+      || Application.get_env(:canary, handler_key)
+
+    case handler do
       {mod, fun} -> apply(mod, fun, [conn])
       nil        -> conn
     end
   end
-
-  defp handle_unauthorized(conn = %{assigns: %{authorized: true}}, _opts), do: conn
 end
