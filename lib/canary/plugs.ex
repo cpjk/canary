@@ -19,10 +19,15 @@ defmodule Canary.Plugs do
   config :canary, current_user: :some_current_user
   ```
 
-  You can specify a handler function to be called when an action is unauthorized like so:
+  You can specify a handler function (in this case, `Helpers.handle_unauthorized`) to be called when an action is unauthorized like so:
   ```elixir
   config :canary, unauthorized_handler: {Helpers, :handle_unauthorized}
   ```
+  or to handle when a resource is not found:
+  ```elixir
+  config :canary, not_found_handler: {Helpers, :handle_not_found}
+  ```
+  Canary will pass the `conn` to the handler function.
   """
 
   @doc """
@@ -63,6 +68,7 @@ defmodule Canary.Plugs do
   * `:preload` - Specifies association(s) to preload
   * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
   * `:persisted` - Specifies the resource should always be loaded from the database, defaults to false
+  * `:not_found_handler` - Specify a handler function to be called if the resource is not found
 
   Examples:
   ```
@@ -154,7 +160,7 @@ defmodule Canary.Plugs do
   * `:preload` - Specifies association(s) to preload
   * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
   * `:persisted` - Specifies the resource should always be loaded from the database, defaults to false
-  * `:unauthorized_handler` - Specify a handler function to call if the action is unauthorized
+  * `:unauthorized_handler` - Specify a handler function to be called if the action is unauthorized
 
   Examples:
   ```
@@ -223,7 +229,8 @@ defmodule Canary.Plugs do
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
   * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
-  * `:unauthorized_handler` - Specify a handler function to call if the action is unauthorized
+  * `:unauthorized_handler` - Specify a handler function to be called if the action is unauthorized
+  * `:not_found_handler` - Specify a handler function to be called if the resource is not found
 
   Examples:
   ```
