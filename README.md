@@ -197,25 +197,6 @@ defimpl Canada.Can, for: Atom do
 end
 ```
 
-#### Handling unauthorized actions
-Canary makes no assumptions about the handling of unauthorized actions.
-However, you can easily handle unauthorized actions by defining a plug like so:
-```elixir
-def redirect_if_unauthorized(conn = %Plug.Conn{assigns: %{authorized: false}}, opts) do
-  conn
-  |> put_flash(:error, "You can't access that page!")
-  |> redirect(to: "/")
-  |> halt
-end
-
-def redirect_if_unauthorized(conn = %Plug.Conn{assigns: %{authorized: true}}, opts), do: conn
-```
-and then calling the plug after any authorization plugs:
-
-```elixir
-plug :redirect_if_unauthorized
-```
-
 #### Nested associations
 Sometimes you need to load and authorize a parent resource when you have a relationship between two resources and you are
 creating a new one or listing all the children of that parent.  By specifying the `:persisted` option with `true`
@@ -242,14 +223,31 @@ create the `Comment` resource using its parent.
   ```elixir
   config :canary, unauthorized_handler: {Helpers, :handle_unauthorized}
   ```
-
-  You can also specify the `:unauthorized_handler` on an individual basis by specifying the `:unauthorized_handler` `opt` in the plug call like so:
+#### Handling resource not found
+  By default, when a resource is not found, Canary simply sets the resource in `conn.assigns` to `nil`. Like unauthorized action handling , you can configure a function to which Canary will pass the `conn` when a resource is not found:
 
   ```elixir
-  plug :load_and_authorize_resource Post, unauthorized_handler: {Helpers, :handle_unauthorized}
+  config :canary, not_found_handler: {Helpers, :handle_not_found}
   ```
 
-  Tip: If you wish the request handling to stop after the handler function exits, e.g. when redirecting, be sure to call `Plug.Conn.halt/1` within your handler.
+  You can also specify handlers on an an individual basis (which will override the corresponding configured handler, if any) by specifying the corresponding `opt` in the plug call:
+
+  ```elixir
+  plug :load_and_authorize_resource Post,
+    unauthorized_handler: {Helpers, :handle_unauthorized},
+    not_found_handler: {Helpers, :handle_not_found}
+  ```
+
+  Tip: If you wish the request handling to stop after the handler function exits, e.g. when redirecting, be sure to call `Plug.Conn.halt/1` within your handler like so:
+  
+```elixir
+def handle_unauthorized(conn) do
+  conn
+  |> put_flash(:error, "You can't access that page!")
+  |> redirect(to: "/")
+  |> halt
+end
+```
 
 ## License
 MIT License. Copyright 2015 Chris Kelly.
