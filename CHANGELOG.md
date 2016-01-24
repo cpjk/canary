@@ -1,5 +1,12 @@
 ## Changelog
 
+## v0.13.0
+
+  * Enhancements
+    * Canary can now be configured to call a user-defined function when a resource is not found. The function is specified and used in a similar manner to `:unauthorized_handler`.
+  * Bug Fixes
+    * Disabled protocol consolidation in order for tests to work on Elixir 1.2
+
 ## v0.12.2
 
   * Deprecations
