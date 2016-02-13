@@ -52,11 +52,20 @@ defmodule Helpers do
   def unauthorized_handler(conn) do
     conn
     |> Map.put(:unauthorized_handler_called, true)
+    |> Plug.Conn.resp(403, "I'm sorry Dave. I'm afraid I can't do that.")
+    |> Plug.Conn.send_resp
   end
 
   def not_found_handler(conn) do
     conn
     |> Map.put(:not_found_handler_called, true)
+    |> Plug.Conn.resp(404, "Resource not found.")
+    |> Plug.Conn.send_resp
+  end
+
+  def non_halting_unauthorized_handler(conn) do
+    conn
+    |> Map.put(:unauthorized_handler_called, true)
   end
 end
 
@@ -839,8 +848,8 @@ defmodule PlugTest do
     params = %{"id" => 1}
     conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
                            private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-    expected = Map.put(conn, :unauthorized_handler_called, true)
-    expected = %{expected | assigns: Map.put(expected.assigns, :authorized, false)}
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = Helpers.unauthorized_handler(expected)
 
     assert authorize_resource(conn, opts) == expected
   end
@@ -851,9 +860,39 @@ defmodule PlugTest do
     params = %{"id" => 3}
     conn = conn(%Plug.Conn{assigns: %{post: nil}, private: %{phoenix_action: :show}}, :get, "/posts/3", params)
 
-    expected = Map.put(conn, :not_found_handler_called, true)
+    expected = Helpers.not_found_handler(conn)
 
     assert load_resource(conn, opts) == expected
+  end
+
+  test "when unauthorized and resource not found, it calls the specified authorization handler first" do
+    opts = [model: Post, not_found_handler: {Helpers, :not_found_handler},
+      unauthorized_handler: {Helpers, :unauthorized_handler}]
+
+    params = %{"id" => 3}
+    conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
+      private: %{phoenix_action: :show}}, :get, "/posts/3", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+    expected = Helpers.unauthorized_handler(expected)
+
+    assert load_and_authorize_resource(conn, opts) == expected
+  end
+
+  test "when the authorization handler does not halt the request, it calls the not found handler if specified" do
+    opts = [model: Post, not_found_handler: {Helpers, :not_found_handler},
+      unauthorized_handler: {Helpers, :non_halting_unauthorized_handler}]
+
+    params = %{"id" => 3}
+    conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
+      private: %{phoenix_action: :show}}, :get, "/posts/3", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+    expected = expected
+    |> Helpers.non_halting_unauthorized_handler
+    |> Helpers.not_found_handler
+
+    assert load_and_authorize_resource(conn, opts) == expected
   end
 
   defmodule UnauthorizedHandlerConfigured do
@@ -866,10 +905,24 @@ defmodule PlugTest do
       params = %{"id" => 1}
       conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
         private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-      expected = Map.put(conn, :unauthorized_handler_called, true)
-      expected = %{expected | assigns: Map.put(expected.assigns, :authorized, false)}
+      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+      expected = Helpers.unauthorized_handler(expected)
 
       assert authorize_resource(conn, opts) == expected
+    end
+
+    test "when unauthorized and resource not found, it calls the configured authorization handler first" do
+      Application.put_env(:canary, :unauthorized_handler, {Helpers, :unauthorized_handler})
+      opts = [model: Post]
+
+      params = %{"id" => 3}
+      conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
+        private: %{phoenix_action: :show}}, :get, "/posts/3", params)
+      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+      expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+      expected = Helpers.unauthorized_handler(expected)
+
+      assert load_and_authorize_resource(conn, opts) == expected
     end
   end
 
@@ -883,7 +936,7 @@ defmodule PlugTest do
       params = %{"id" => 1}
       conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
         private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-      expected = Map.put(conn, :unauthorized_handler_called, true)
+      expected = Helpers.unauthorized_handler(conn)
       expected = %{expected | assigns: Map.put(expected.assigns, :authorized, false)}
 
       assert authorize_resource(conn, opts) == expected
@@ -899,7 +952,7 @@ defmodule PlugTest do
 
       params = %{"id" => 4}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/4", params)
-      expected = Map.put(conn, :not_found_handler_called, true)
+      expected = Helpers.not_found_handler(conn)
       expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
 
       assert load_resource(conn, opts) == expected
@@ -915,7 +968,7 @@ defmodule PlugTest do
 
       params = %{"id" => 4}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/4", params)
-      expected = Map.put(conn, :not_found_handler_called, true)
+      expected = Helpers.not_found_handler(conn)
       expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
 
       assert load_resource(conn, opts) == expected

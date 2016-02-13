@@ -254,10 +254,17 @@ defmodule Canary.Plugs do
 
   defp _load_and_authorize_resource(conn, opts) do
     conn
+    |> Map.put(:skip_canary_handler, true) # skip not_found_handler so auth handler can catch first if needed
     |> load_resource(opts)
+    |> Map.delete(:skip_canary_handler) # allow auth handling
     |> authorize_resource(opts)
+    |> maybe_handle_not_found(opts)
     |> purge_resource_if_unauthorized(opts)
   end
+
+  # Only try to handle 404 if the response has not been sent during authorization handling
+  defp maybe_handle_not_found(conn = %{state: :sent}, opts), do: conn
+  defp maybe_handle_not_found(conn, opts), do: handle_not_found(conn, opts)
 
   defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: true}}, _opts), do: conn
   defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: false}}, opts) do
@@ -394,13 +401,23 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp handle_unauthorized(conn = %{assigns: %{authorized: false}}, opts), do: apply_error_handler(conn, :unauthorized_handler, opts)
-  defp handle_unauthorized(conn = %{assigns: %{authorized: true}}, _opts), do: conn
+  defp handle_unauthorized(conn = %{skip_canary_handler: true}, opts),
+    do: conn
+  defp handle_unauthorized(conn = %{assigns: %{authorized: true}}, _opts),
+    do: conn
+  defp handle_unauthorized(conn = %{assigns: %{authorized: false}}, opts),
+    do: apply_error_handler(conn, :unauthorized_handler, opts)
+
+  defp handle_not_found(conn = %{skip_canary_handler: true}, opts) do
+    conn
+  end
 
   defp handle_not_found(conn, opts) do
     action = get_action(conn)
 
-    case is_nil(Map.get(conn.assigns, resource_name(conn, opts))) and not action in [:index, :new, :create] do
+    case is_nil(Map.get(conn.assigns, resource_name(conn, opts)))
+      and not action in [:index, :new, :create] do
+
       true -> apply_error_handler(conn, :not_found_handler, opts)
       false -> conn
     end
