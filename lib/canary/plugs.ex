@@ -266,10 +266,10 @@ defmodule Canary.Plugs do
   defp maybe_handle_not_found(conn = %{state: :sent}, opts), do: conn
   defp maybe_handle_not_found(conn, opts), do: handle_not_found(conn, opts)
 
-  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: true}}, _opts), do: conn
-  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: false}}, opts) do
-    %{conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), nil)}
-  end
+  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: true}}, _opts),
+    do: conn
+  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: false}}, opts),
+    do: %{conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), nil)}
 
   defp fetch_resource(conn, opts) do
     repo = Application.get_env(:canary, :repo)
@@ -390,7 +390,9 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp preload_if_needed(nil, _repo, _opts), do: nil
+  defp preload_if_needed(nil, _repo, _opts) do
+    nil
+  end
 
   defp preload_if_needed(records, repo, opts) do
     case opts[:preload] do
