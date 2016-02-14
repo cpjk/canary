@@ -46,7 +46,7 @@ Specify your Ecto repo in your configuration:
 config :canary, repo: Project.Repo
 ```
 
-#### load_resource/2
+### load_resource/2
 
 Loads the resource having the id given in `conn.params["id"]` from the database using the given Ecto repo and model, and assigns the resource to `conn.assigns.<resource_name>`, where `resource_name` is inferred from the model name.
 
@@ -58,7 +58,7 @@ plug :load_resource, model: Project.User
 Will load the `Project.User` having the id given in `conn.params["id"]` through `Project.Repo`, into
 `conn.assigns.user`
 
-#### authorize_resource/2
+### authorize_resource/2
 
 Checks whether or not the `current_user` can perform the given action on the given resource and assigns the result (true/false) to `conn.assigns.authorized`. It is up to you to decide what to do with the result.
 
@@ -68,13 +68,13 @@ For non-Phoenix applications, or to override the action provided by Phoenix, sim
 
 In order to authorize resources, you must specify permissions by implementing the [Canada.Can protocol](https://github.com/jarednorman/canada) for your `User` model (Canada is included as a light weight dependency).
 
-#### load_and_authorize_resource/2
+### load_and_authorize_resource/2
 
 Authorizes the resource and then loads it if authorization succeeds. Again, the resource is loaded into `conn.assigns.<resource_name>`.
 
 In the following example, the `User` with the same id as the `current_user` is only loaded if authorization succeeds.
 
-#### Example
+### Example
 
 Let's say you have a Phoenix application with a `User` model, and you want to authorize the `current_user` for accessing `User` resources.
 
@@ -107,7 +107,7 @@ In this case, on `GET /users/12` authorization succeeds, and the `Project.User` 
 
 However, on `DELETE /users/12`, authorization fails and the resource is not loaded.
 
-#### Excluding actions
+### Excluding actions
 
 To exclude an action from any of the plugs, pass the `:except` key, with a single action or list of actions.
 
@@ -122,7 +122,7 @@ List form:
 plug :load_and_authorize_resource, model: Project.User, except: [:show, :create]
 ```
 
-#### Authorizing only specific actions
+### Authorizing only specific actions
 
 To specify that a plug should be run only for a specific list of actions, pass the `:only` key, with a single action or list of actions.
 
@@ -139,7 +139,7 @@ plug :load_and_authorize_resource, model: Project.User, only: [:show, :create]
 
 Note: Passing both `:only` and `:except` to a plug is invalid. Currently, the plug will simply pass the `Conn` along unchanged.
 
-#### Overriding the default user
+### Overriding the default user
 
 Globally, the default key for finding the user to authorize can be set in your configuration as follows:
 ```elixir
@@ -152,7 +152,7 @@ The current user can also be overridden for individual plugs as follows:
 plug :load_and_authorize_resource, model: Project.User, current_user: :current_admin
 ```
 
-#### Specifying resource_name
+### Specifying resource_name
 
 To specify the name under which the loaded resource is stored, pass the `:as` flag in the plug declaration.
 
@@ -162,7 +162,7 @@ plug :load_and_authorize_resource, model: Project.Post, as: :new_post
 ```
 will load the post into `conn.assigns.new_post`
 
-#### Preloading associations
+### Preloading associations
 
 Associations can be preloaded with `Repo.preload` by passing the `:preload` option with the name of the association:
 
@@ -170,7 +170,7 @@ Associations can be preloaded with `Repo.preload` by passing the `:preload` opti
 plug :load_and_authorize_resource, model: Project.User, preload: :posts
 ```
 
-#### A note about index, new, and create actions
+### A note about index, new, and create actions
 For the `:index`, `:new`, and `:create` actions, the resource passed to the `Canada.Can` implementation
 should be the *module* name of the model rather than a struct.
 
@@ -187,7 +187,7 @@ For example, when authorizing access to the `Post` resource,
   ```elixir
   def can?(%User{}, :index, %Post{}), do: true
   ```
-#### Implementing Canada.Can for an anonymous user
+### Implementing Canada.Can for an anonymous user
 You may wish to define permissions for when there is no logged in current user (when `conn.assigns.current_user` is `nil`).
 In this case, you can implement `Canada.Can` for `nil` like so:
 ```elixir
@@ -197,7 +197,7 @@ defimpl Canada.Can, for: Atom do
 end
 ```
 
-#### Nested associations
+### Nested associations
 Sometimes you need to load and authorize a parent resource when you have a relationship between two resources and you are
 creating a new one or listing all the children of that parent.  By specifying the `:persisted` option with `true`
 you can load and/or authorize a nested resource.  Specifying this option overrides the default loading behavior of the
@@ -214,7 +214,7 @@ For example, when loading and authorizing a `Post` resource which can have one o
 to load and authorize the parent `Post` resource using the `post_id` in /posts/:post_id/comments before you
 create the `Comment` resource using its parent.
 
-#### Handling unauthorized actions
+### Handling unauthorized actions
   By default, when an action is unauthorized, Canary simply sets `conn.assigns.authorized` to `false`.
   However, you can configure a handler function to be called when authorization fails. Canary will pass the `Plug.Conn` to the given function. The handler should accept a `Plug.Conn` as its only argument, and should return a `Plug.Conn`.
 
@@ -223,7 +223,7 @@ create the `Comment` resource using its parent.
   ```elixir
   config :canary, unauthorized_handler: {Helpers, :handle_unauthorized}
   ```
-#### Handling resource not found
+### Handling resource not found
   By default, when a resource is not found, Canary simply sets the resource in `conn.assigns` to `nil`. Like unauthorized action handling , you can configure a function to which Canary will pass the `conn` when a resource is not found:
 
   ```elixir
