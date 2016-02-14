@@ -1,5 +1,12 @@
 ## Changelog
 
+## v0.13.1
+
+  * Enhancements
+    * If both an `:unauthorized_handler` and a `:not_found_handler` are specified for `load_and_authorize_resource`, and the request meets the criteria for both, the `:unauthorized_handler` will be called first.
+  * Bug Fixes
+    * If more than one handler are specified and the first handler halts the request, the second handler will be skipped.
+
 ## v0.13.0
 
   * Enhancements
