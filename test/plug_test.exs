@@ -9,6 +9,7 @@ defmodule Post do
     belongs_to :user, :integer, define_field: false # :defaults not working so define own field with default value
 
     field :user_id, :integer, default: 1
+    field :slug, :string
   end
 end
 
@@ -26,6 +27,17 @@ defmodule Repo do
   def preload(%Post{id: 2, user_id: 2}, :user), do: %Post{id: 2, user_id: 2, user: %User{id: 2}}
   def preload([%Post{id: 1},  %Post{id: 2, user_id: 2}], :user), do: [%Post{id: 1}, %Post{id: 2, user_id: 2, user: %User{id: 2}}]
   def preload(resources, _), do: resources
+
+  def get_by(User, %{id: 1}), do: %User{}
+  def get_by(User, _), do: nil
+
+  def get_by(Post, %{id: 1}), do: %Post{id: 1}
+  def get_by(Post, %{id: 2}), do: %Post{id: 2, user_id: 2}
+  def get_by(Post, %{id: _}), do: nil
+
+  def get_by(Post, %{slug: "slug1"}), do: %Post{id: 1, slug: "slug1"}
+  def get_by(Post, %{slug: "slug2"}), do: %Post{id: 2, slug: "slug2", user_id: 2}
+  def get_by(Post, %{slug: _}), do: nil
 end
 
 defimpl Canada.Can, for: User do
@@ -145,6 +157,17 @@ defmodule PlugTest do
     params = %{"post_id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
     expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
+
+    assert load_resource(conn, opts) == expected
+  end
+
+  test "it loads the resource correctly with opts[:id_field] specified" do
+    opts = [model: Post, id_name: "slug", id_field: "slug"]
+
+    # when slug param is correct
+    params = %{"slug" => "slug1"}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/slug1", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1, slug: "slug1"})}
 
     assert load_resource(conn, opts) == expected
   end
@@ -576,7 +599,7 @@ defmodule PlugTest do
 
     assert load_resource(conn, opts) == expected
   end
-  
+
   test "it only authorizes actions in opts[:only]" do
     # when the action is in opts[:only]
     opts = [model: Post, only: :show]

@@ -67,6 +67,7 @@ defmodule Canary.Plugs do
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
   * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
+  * `:id_field` - Specifies the name of the ID field in the database for searching :id_name value, defaults to "id".
   * `:persisted` - Specifies the resource should always be loaded from the database, defaults to false
   * `:not_found_handler` - Specify a handler function to be called if the resource is not found
 
@@ -81,6 +82,8 @@ defmodule Canary.Plugs do
   plug :load_resource, model: User, except: [:destroy]
 
   plug :load_resource, model: Post, id_name: "post_id", only: [:new, :create], persisted: true
+
+  plug :load_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
   ```
   """
   def load_resource(conn, opts) do
@@ -159,6 +162,7 @@ defmodule Canary.Plugs do
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
   * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
+  * `:id_field` - Specifies the name of the ID field in the database for searching :id_name value, defaults to "id".
   * `:persisted` - Specifies the resource should always be loaded from the database, defaults to false
   * `:unauthorized_handler` - Specify a handler function to be called if the action is unauthorized
 
@@ -171,6 +175,8 @@ defmodule Canary.Plugs do
   plug :authorize_resource, model: User, only: [:index, :show], preload: :posts
 
   plug :load_resource, model: Post, id_name: "post_id", only: [:index], persisted: true, preload: :comments
+
+  plug :load_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
   ```
   """
   def authorize_resource(conn, opts) do
@@ -229,6 +235,7 @@ defmodule Canary.Plugs do
   * `:except` - Specifies which actions for which to skip authorization
   * `:preload` - Specifies association(s) to preload
   * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
+  * `:id_field` - Specifies the name of the ID field in the database for searching :id_name value, defaults to "id".
   * `:unauthorized_handler` - Specify a handler function to be called if the action is unauthorized
   * `:not_found_handler` - Specify a handler function to be called if the resource is not found
 
@@ -244,6 +251,8 @@ defmodule Canary.Plugs do
   plug :load_and_authorize_resource, model: User, only: [:index, :show], preload: :posts, as: :person
 
   plug :load_and_authorize_resource, model: User, except: [:destroy]
+
+  plug :load_and_authorize_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
   ```
   """
   def load_and_authorize_resource(conn, opts) do
@@ -277,23 +286,26 @@ defmodule Canary.Plugs do
   defp fetch_resource(conn, opts) do
     repo = Application.get_env(:canary, :repo)
 
-    id = get_resource_id(conn, opts)
+    field_name = (opts[:id_field] || "id")
+
+    get_map_args = %{field_name => get_resource_id(conn, opts)}
+    get_map_args = (for {key, val} <- get_map_args, into: %{}, do: {String.to_atom(key), val})
 
     conn.assigns
     |> Map.fetch(resource_name(conn, opts)) # check if a resource is already loaded at the key
     |> case do
       :error ->
-        repo.get(opts[:model], id)
+        repo.get_by(opts[:model], get_map_args)
         |> preload_if_needed(repo, opts)
       {:ok, nil} ->
-        repo.get(opts[:model], id)
+        repo.get_by(opts[:model], get_map_args)
         |> preload_if_needed(repo, opts)
       {:ok, resource} ->
         case (resource.__struct__ == opts[:model]) do
           true  -> # A resource of the type passed as opts[:model] is already loaded; do not clobber it
             resource
           false ->
-            repo.get(opts[:model], id)
+            repo.get_by(opts[:model], get_map_args)
             |> preload_if_needed(repo, opts)
         end
     end
