@@ -4,7 +4,7 @@ defmodule Canary.Mixfile do
   def project do
     [app: :canary,
      version: "0.13.1",
-     elixir: "~> 1.0  or ~> 1.1-beta",
+     elixir: "~> 1.2.0",
      package: package,
      description: """
      An authorization library to restrict what resources the current user is
