@@ -29,9 +29,9 @@ defmodule Canary.Mixfile do
 
   defp deps do
     [
-     { :ecto, ">= 0.10.0" },
-     { :canada, "~> 1.0.0" },
-     { :plug, ">= 0.11.3" },
+     {:ecto, "~> 1.1"},
+     {:canada, "~> 1.0.0"},
+     {:plug, ">= 0.11.3"},
      {:ex_doc, "~> 0.7", only: :dev},
      {:earmark, ">= 0.0.0", only: :dev},
      {:mock, ">= 0.0.0", only: :test}
