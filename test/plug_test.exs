@@ -366,6 +366,170 @@ defmodule PlugTest do
     assert authorize_resource(conn, opts) == expected
   end
 
+  test "it authorizes the resource correctly when using :id_field option" do
+    opts = [model: Post, id_field: "slug", id_name: "slug"]
+
+    # when the action is "new"
+    params = %{}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :new},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/new",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+
+
+    # when the action is "create"
+    params = %{}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :create},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/create",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+
+
+    # when the action is "index"
+    params = %{}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :index},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+
+
+    # when the action is a phoenix action
+    params = %{"slug" => "slug1"}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/slug1",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+
+
+    # when the current user can access the given resource
+    # and the action is specified in conn.assigns.canary_action
+    params = %{"slug" => "slug1"}
+    conn = conn(
+      %Plug.Conn{
+        private: %{},
+        assigns: %{current_user: %User{id: 1}, canary_action: :show}
+      },
+      :get,
+      "/posts/slug1",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+
+
+    # when both conn.assigns.canary_action and conn.private.phoenix_action are defined
+    # it uses conn.assigns.canary_action for authorization
+    params = %{"slug" => "slug1"}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}, canary_action: :unauthorized}
+      },
+      :get,
+      "/posts/slug1",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+
+    assert authorize_resource(conn, opts) == expected
+
+
+    # when the current user cannot access the given resource
+    params = %{"slug" => "slug2"}
+    conn = conn(
+      %Plug.Conn{
+        private: %{},
+        assigns: %{current_user: %User{id: 1}, canary_action: :show}
+      },
+      :get,
+      "/posts/slug2",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+
+    assert authorize_resource(conn, opts) == expected
+
+    # when the resource of the desired type already exists in conn.assigns,
+    # it authorizes for that resource
+    params = %{"slug" => "slug2"}
+    conn = conn(
+      %Plug.Conn{
+        private: %{},
+        assigns: %{current_user: %User{id: 1}, canary_action: :show, post: %Post{user_id: 1}}
+      },
+      :get,
+      "/posts/slug2",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+    assert authorize_resource(conn, opts) == expected
+
+    # when the resource of a different type already exists in conn.assigns,
+    # it authorizes for the desired resource
+    params = %{"slug" => "slug2"}
+    conn = conn(
+      %Plug.Conn{
+        private: %{},
+        assigns: %{current_user: %User{id: 1}, canary_action: :show, post: %User{}}
+      },
+      :get,
+      "/posts/slug2",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+
+    assert authorize_resource(conn, opts) == expected
+
+    # when current_user is nil
+    params = %{"slug" => "slug1"}
+    conn = conn(
+      %Plug.Conn{
+        private: %{},
+        assigns: %{current_user: nil, canary_action: :create}
+      },
+      :post,
+      "/posts",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+
+    assert authorize_resource(conn, opts) == expected
+  end
+
   test "it authorizes the resource correctly with opts[:persisted] specified on :index action" do
     opts = [model: Post, id_name: "post_id", persisted: true]
 
@@ -500,6 +664,94 @@ defmodule PlugTest do
       },
       :get,
       "/posts/1",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+
+    assert load_and_authorize_resource(conn, opts) == expected
+  end
+
+  test "it loads and authorizes the resource correctly when using :id_field option" do
+    opts = [model: Post, id_field: "slug", id_name: "slug"]
+
+    # when the current user can access the given resource
+    # and the resource can be loaded
+    params = %{"slug" => "slug1"}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/slug1",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 1, slug: "slug1", user_id: 1})}
+
+    assert load_and_authorize_resource(conn, opts) == expected
+
+
+    # when the current user cannot access the given resource
+    params = %{"slug" => "slug2"}
+    conn = conn(
+      %Plug.Conn{
+        private: %{},
+        assigns: %{current_user: %User{id: 1}, canary_action: :show}
+      },
+      :get,
+      "/posts/slug2",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+
+    assert load_and_authorize_resource(conn, opts) == expected
+
+    # when a resource of the desired type is already present in conn.assigns
+    # it does not load a new resource
+    params = %{"slug" => "slug2"}
+    conn = conn(
+      %Plug.Conn{
+        private: %{},
+        assigns: %{current_user: %User{id: 1}, canary_action: :show, post: %Post{user_id: 1}}
+      },
+      :get,
+      "/posts/slug2",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{user_id: 1})}
+
+    assert load_and_authorize_resource(conn, opts) == expected
+
+    # when a resource of the a different type is already present in conn.assigns
+    # it loads and authorizes for the desired resource
+    params = %{"slug" => "slug2"}
+    conn = conn(
+      %Plug.Conn{
+        private: %{},
+        assigns: %{current_user: %User{id: 1}, canary_action: :show, post: %User{id: 1}}
+      },
+      :get,
+      "/posts/slug2",
+      params
+    )
+    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+
+    assert load_and_authorize_resource(conn, opts) == expected
+
+    # when the given resource cannot be loaded
+    params = %{"slug" => "slug3"}
+    conn = conn(
+      %Plug.Conn{
+        private: %{},
+        assigns: %{current_user: %User{id: 1}, canary_action: :show}
+      },
+      :get,
+      "/posts/slug3",
       params
     )
     expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
