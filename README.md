@@ -215,7 +215,8 @@ to load and authorize the parent `Post` resource using the `post_id` in /posts/:
 create the `Comment` resource using its parent.
 
 ### Specifing database field
-You can use `:id_field` option if you want to use other field name instead of the default `:id` for searching the resource. Note that the field specified must be unique among the resource table.
+
+You can tell Canary to search for a resource using a field other than the default `:id` by using the `:id_field` option. Note that the specified field must be able to uniquely identify any resource in the specified table.
 
 For example, if you want to access your posts using a string field called `slug`, you can use
 
@@ -231,7 +232,7 @@ In this case in your `web/router.ex` you should have something like:
 resources "/posts", PostController, param: "slug"
 ```
 
-Then, the urls you will have will be like:
+Then your URLs will look like:
 
 
 ```
