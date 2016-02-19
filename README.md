@@ -284,4 +284,4 @@ end
 Note: If both an `:unauthorized_handler` and a `:not_found_handler` are specified for `load_and_authorize_resource`, and the request meets the criteria for both, the `:unauthorized_handler` will be called first.
 
 ## License
-MIT License. Copyright 2015 Chris Kelly.
+MIT License. Copyright 2016 Chris Kelly.
