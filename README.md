@@ -101,7 +101,7 @@ To automatically load and authorize the  `Project.User` having the `id` given in
 plug :load_and_authorize_resource, model: Project.User
 ```
 
-In this case, the `Project.User` specified by `conn.params["id]` is loaded into `conn.assigns.user` for `GET /users/12`, but _not_ for `DELETE /users/12`.
+In this case, the `Project.User` specified by `conn.params["id"]` is loaded into `conn.assigns.user` for `GET /users/12`, but _not_ for `DELETE /users/12`.
 
 In this case, on `GET /users/12` authorization succeeds, and the `Project.User` specified by `conn.params["id]` will be loaded into `conn.assigns.user`.
 
@@ -213,6 +213,38 @@ For example, when loading and authorizing a `Post` resource which can have one o
 
 to load and authorize the parent `Post` resource using the `post_id` in /posts/:post_id/comments before you
 create the `Comment` resource using its parent.
+
+### Specifing database field
+
+You can tell Canary to search for a resource using a field other than the default `:id` by using the `:id_field` option. Note that the specified field must be able to uniquely identify any resource in the specified table.
+
+For example, if you want to access your posts using a string field called `slug`, you can use
+
+```elixir
+plug :load_and_authorize_resource, model: Post, id_name: "slug", id_field: "slug"
+```
+
+to load and authorize the resource `Post` with the slug specified by `conn.params["slug"]` value.
+
+In this case in your `web/router.ex` you should have something like:
+
+```elixir
+resources "/posts", PostController, param: "slug"
+```
+
+Then your URLs will look like:
+
+
+```
+/posts/my-new-post
+```
+
+instead of
+
+```
+/posts/1
+```
+
 
 ### Handling unauthorized actions
   By default, when an action is unauthorized, Canary simply sets `conn.assigns.authorized` to `false`.
