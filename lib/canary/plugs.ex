@@ -390,7 +390,7 @@ defmodule Canary.Plugs do
         opts[:model]
         |> Module.split
         |> List.last
-        |> Mix.Utils.underscore
+        |> Macro.underscore
         |> pluralize_if_needed(conn, opts)
         |> String.to_atom
       as -> as
