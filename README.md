@@ -2,6 +2,7 @@ Canary
 ======
 [![Build Status](https://travis-ci.org/cpjk/canary.svg?branch=master 
 "Build Status")](https://travis-ci.org/cpjk/canary)
+[![Hex pm](https://img.shields.io/hexpm/v/canary.svg?style=flat)](https://hex.pm/packages/canary)
 
 An authorization library in Elixir for Plug applications that restricts what resources
 the current user is allowed to access, and automatically loads resources for the current request.
@@ -24,7 +25,7 @@ For the latest release:
 
 ```elixir
 defp deps do
-  {:canary, "~> 0.13.1"}
+  {:canary, "~> 0.14.0"}
 end
 ```
 
@@ -284,4 +285,4 @@ end
 Note: If both an `:unauthorized_handler` and a `:not_found_handler` are specified for `load_and_authorize_resource`, and the request meets the criteria for both, the `:unauthorized_handler` will be called first.
 
 ## License
-MIT License. Copyright 2015 Chris Kelly.
+MIT License. Copyright 2016 Chris Kelly.

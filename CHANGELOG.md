@@ -1,5 +1,12 @@
 ## Changelog
 
+## v0.14.0
+  * Enhancements
+    * You can now tell Canary to search for a resource using a field other than the default `:id` by using the `:id_field` option. Note that the specified field must be able to uniquely identify any resource in the specified table.
+  * Dependency changes
+    * Elixir ~> 1.2 is now required
+    * Ecto ~> 1.1 is now required
+
 ## v0.13.1
 
   * Enhancements
