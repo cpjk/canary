@@ -1,5 +1,9 @@
 ## Changelog
 
+## v0.14.1
+  * Bug fixes
+    * Use Macro.underscore/1 instead of Mix.Utils.underscore/1 to avoid :mix dependency on production
+
 ## v0.14.0
   * Enhancements
     * You can now tell Canary to search for a resource using a field other than the default `:id` by using the `:id_field` option. Note that the specified field must be able to uniquely identify any resource in the specified table.
