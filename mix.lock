@@ -5,5 +5,5 @@
   "ex_doc": {:hex, :ex_doc, "0.11.0"},
   "meck": {:hex, :meck, "0.8.3"},
   "mock": {:hex, :mock, "0.1.1"},
-  "plug": {:hex, :plug, "1.0.2"},
+  "plug": {:hex, :plug, "1.1.5"},
   "poolboy": {:hex, :poolboy, "1.5.1"}}
