@@ -284,31 +284,34 @@ defmodule Canary.Plugs do
     do: %{conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), nil)}
 
   defp fetch_resource(conn, opts) do
-    repo = Application.get_env(:canary, :repo)
-
-    field_name = (opts[:id_field] || "id")
-
-    get_map_args = %{field_name => get_resource_id(conn, opts)}
-    get_map_args = (for {key, val} <- get_map_args, into: %{}, do: {String.to_atom(key), val})
-
     conn.assigns
     |> Map.fetch(resource_name(conn, opts)) # check if a resource is already loaded at the key
     |> case do
       :error ->
-        repo.get_by(opts[:model], get_map_args)
-        |> preload_if_needed(repo, opts)
+        proper_fetch(conn, opts)
       {:ok, nil} ->
-        repo.get_by(opts[:model], get_map_args)
-        |> preload_if_needed(repo, opts)
+        proper_fetch(conn, opts)
       {:ok, resource} ->
         case (resource.__struct__ == opts[:model]) do
           true  -> # A resource of the type passed as opts[:model] is already loaded; do not clobber it
             resource
           false ->
-            repo.get_by(opts[:model], get_map_args)
-            |> preload_if_needed(repo, opts)
+            proper_fetch(conn, opts)
         end
     end
+  end
+
+  defp proper_fetch(conn, opts) do
+    repo = Application.get_env(:canary, :repo)
+    field_name = (opts[:id_field] || "id")
+    get_by_args = %{field_name => get_resource_id(conn, opts)}
+    get_by_args = (for {key, val} <- get_by_args, into: %{}, do: {String.to_atom(key), val})
+
+    case Keyword.get(opts, :fetch_func) do
+      {mod, fun} -> apply(mod, fun, [conn, opts])
+      nil        -> repo.get_by(opts[:model], get_by_args)
+    end
+    |> preload_if_needed(repo, opts)
   end
 
   defp fetch_all(conn, opts) do
