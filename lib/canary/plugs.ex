@@ -314,6 +314,17 @@ defmodule Canary.Plugs do
     |> preload_if_needed(repo, opts)
   end
 
+  defp proper_fetch_all(conn, opts) do
+    repo = Application.get_env(:canary, :repo)
+
+    case Keyword.get(opts, :fetch__all_func) do
+      {mod, fun} -> apply(mod, fun, [conn, opts])
+      nil        ->
+        from(m in opts[:model]) |> select([m], m) |> repo.all
+    end
+    |> preload_if_needed(repo, opts)
+  end
+
   defp fetch_all(conn, opts) do
     repo = Application.get_env(:canary, :repo)
 
@@ -321,13 +332,13 @@ defmodule Canary.Plugs do
     |> Map.fetch(resource_name(conn, opts))
     |> case do # check if a resource is already loaded at the key
       :error ->
-        from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
+        proper_fetch_all(conn, opts)
       {:ok, resource} ->
         case (resource.__struct__ == opts[:model]) do
           true  ->
             resource
           false ->
-            from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
+            proper_fetch_all(conn, opts)
         end
     end
   end
