@@ -1,6 +1,9 @@
 ## Changelog
 
 ## v0.14.1
+  * Relax Ecto version requirements
+
+## v0.14.1
   * Bug fixes
     * Use Macro.underscore/1 instead of Mix.Utils.underscore/1 to avoid :mix dependency on production
 
