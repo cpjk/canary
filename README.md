@@ -1,7 +1,6 @@
 Canary
 ======
-[![Build Status](https://travis-ci.org/cpjk/canary.svg?branch=master 
-"Build Status")](https://travis-ci.org/cpjk/canary)
+[![Build Status](https://travis-ci.org/cpjk/canary.svg?branch=master)](https://travis-ci.org/cpjk/canary)
 [![Hex pm](https://img.shields.io/hexpm/v/canary.svg?style=flat)](https://hex.pm/packages/canary)
 
 An authorization library in Elixir for Plug applications that restricts what resources
@@ -115,10 +114,13 @@ To exclude an action from any of the plugs, pass the `:except` key, with a singl
 For example,
 
 Single action form:
+
 ```elixir
 plug :load_and_authorize_resource, model: Project.User, except: :show
 ```
+
 List form:
+
 ```elixir
 plug :load_and_authorize_resource, model: Project.User, except: [:show, :create]
 ```
@@ -130,10 +132,13 @@ To specify that a plug should be run only for a specific list of actions, pass t
 For example,
 
 Single action form:
+
 ```elixir
 plug :load_and_authorize_resource, model: Project.User, only: :show
 ```
+
 List form:
+
 ```elixir
 plug :load_and_authorize_resource, model: Project.User, only: [:show, :create]
 ```
@@ -143,12 +148,15 @@ Note: Passing both `:only` and `:except` to a plug is invalid. Currently, the pl
 ### Overriding the default user
 
 Globally, the default key for finding the user to authorize can be set in your configuration as follows:
+
 ```elixir
 config :canary, current_user: :some_current_user
 ```
+
 In this case, canary will look for the current user record in `conn.assigns.some_current_user`.
 
 The current user can also be overridden for individual plugs as follows:
+
 ```elixir
 plug :load_and_authorize_resource, model: Project.User, current_user: :current_admin
 ```
@@ -158,9 +166,11 @@ plug :load_and_authorize_resource, model: Project.User, current_user: :current_a
 To specify the name under which the loaded resource is stored, pass the `:as` flag in the plug declaration.
 
 For example,
+
 ```elixir
 plug :load_and_authorize_resource, model: Project.Post, as: :new_post
 ```
+
 will load the post into `conn.assigns.new_post`
 
 ### Preloading associations
@@ -172,25 +182,29 @@ plug :load_and_authorize_resource, model: Project.User, preload: :posts
 ```
 
 ### A note about index, new, and create actions
+
 For the `:index`, `:new`, and `:create` actions, the resource passed to the `Canada.Can` implementation
 should be the *module* name of the model rather than a struct.
 
 For example, when authorizing access to the `Post` resource,
 
-  use
+use
 
-  ```elixir
-  def can?(%User{}, :index, Post), do: true
-  ```
+```elixir
+def can?(%User{}, :index, Post), do: true
+```
 
-  instead of
+instead of
 
-  ```elixir
-  def can?(%User{}, :index, %Post{}), do: true
-  ```
+```elixir
+def can?(%User{}, :index, %Post{}), do: true
+```
+
 ### Implementing Canada.Can for an anonymous user
+
 You may wish to define permissions for when there is no logged in current user (when `conn.assigns.current_user` is `nil`).
 In this case, you can implement `Canada.Can` for `nil` like so:
+
 ```elixir
 defimpl Canada.Can, for: Atom do
   # When the user is not logged in, authorization should always fail
@@ -199,6 +213,7 @@ end
 ```
 
 ### Nested associations
+
 Sometimes you need to load and authorize a parent resource when you have a relationship between two resources and you are
 creating a new one or listing all the children of that parent.  By specifying the `:persisted` option with `true`
 you can load and/or authorize a nested resource.  Specifying this option overrides the default loading behavior of the
@@ -208,9 +223,9 @@ name for the call to `Canada.can?`.
 
 For example, when loading and authorizing a `Post` resource which can have one or more `Comment` resources, use
 
-    ```elixir
-    plug :load_and_authorize_resource, model: Post, id_name: "post_id", persisted: true, only: [:create]
-    ```
+```elixir
+plug :load_and_authorize_resource, model: Post, id_name: "post_id", persisted: true, only: [:create]
+```
 
 to load and authorize the parent `Post` resource using the `post_id` in /posts/:post_id/comments before you
 create the `Comment` resource using its parent.
@@ -235,7 +250,6 @@ resources "/posts", PostController, param: "slug"
 
 Then your URLs will look like:
 
-
 ```
 /posts/my-new-post
 ```
@@ -246,33 +260,35 @@ instead of
 /posts/1
 ```
 
-
 ### Handling unauthorized actions
-  By default, when an action is unauthorized, Canary simply sets `conn.assigns.authorized` to `false`.
-  However, you can configure a handler function to be called when authorization fails. Canary will pass the `Plug.Conn` to the given function. The handler should accept a `Plug.Conn` as its only argument, and should return a `Plug.Conn`.
 
-  For example, to have Canary call `Helpers.handle_unauthorized/1`:
+By default, when an action is unauthorized, Canary simply sets `conn.assigns.authorized` to `false`.
+However, you can configure a handler function to be called when authorization fails. Canary will pass the `Plug.Conn` to the given function. The handler should accept a `Plug.Conn` as its only argument, and should return a `Plug.Conn`.
 
-  ```elixir
-  config :canary, unauthorized_handler: {Helpers, :handle_unauthorized}
-  ```
+For example, to have Canary call `Helpers.handle_unauthorized/1`:
+
+```elixir
+config :canary, unauthorized_handler: {Helpers, :handle_unauthorized}
+```
+
 ### Handling resource not found
-  By default, when a resource is not found, Canary simply sets the resource in `conn.assigns` to `nil`. Like unauthorized action handling , you can configure a function to which Canary will pass the `conn` when a resource is not found:
 
-  ```elixir
-  config :canary, not_found_handler: {Helpers, :handle_not_found}
-  ```
+By default, when a resource is not found, Canary simply sets the resource in `conn.assigns` to `nil`. Like unauthorized action handling , you can configure a function to which Canary will pass the `conn` when a resource is not found:
 
-  You can also specify handlers on an an individual basis (which will override the corresponding configured handler, if any) by specifying the corresponding `opt` in the plug call:
+```elixir
+config :canary, not_found_handler: {Helpers, :handle_not_found}
+```
 
-  ```elixir
-  plug :load_and_authorize_resource Post,
-    unauthorized_handler: {Helpers, :handle_unauthorized},
-    not_found_handler: {Helpers, :handle_not_found}
-  ```
+You can also specify handlers on an an individual basis (which will override the corresponding configured handler, if any) by specifying the corresponding `opt` in the plug call:
 
-  Tip: If you wish the request handling to stop after the handler function exits, e.g. when redirecting, be sure to call `Plug.Conn.halt/1` within your handler like so:
-  
+```elixir
+plug :load_and_authorize_resource Post,
+  unauthorized_handler: {Helpers, :handle_unauthorized},
+  not_found_handler: {Helpers, :handle_not_found}
+```
+
+Tip: If you wish the request handling to stop after the handler function exits, e.g. when redirecting, be sure to call `Plug.Conn.halt/1` within your handler like so:
+
 ```elixir
 def handle_unauthorized(conn) do
   conn
