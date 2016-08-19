@@ -36,15 +36,20 @@ Canary provides three functions to be used as plugs to load and authorize resour
 
 `load_resource/2`, `authorize_resource/2`, and `load_and_authorize_resource/2`.
 
-Just `import Canary.Plugs` in order to use the plugs. In a Phoenix app the best place would probably be in your `web/web.ex`.
+`load_resource/2` and `authorize_resource/2` can be used by themselves, while `load_and_authorize_resource/2` combines them both.
 
-By default, Canary expects  `conn.assigns.current_user` to contain an Ecto record representing the user to authorize.
+In order to use Canary, you will need, at minimum:
 
-Specify your Ecto repo in your configuration:
+- A [Canada.Can protocol](https://github.com/jarednorman/canada) implementation (a good place would be `lib/abilities.ex`)
 
+- An Ecto record struct containing the user to authorize in `conn.assigns.current_user` (the key can be customized - see https://github.com/cpjk/canary#overriding-the-default-user).
+
+- Your Ecto repo specified in your `config/config.exs`:
 ```elixir
 config :canary, repo: Project.Repo
 ```
+
+Then, just `import Canary.Plugs` in order to use the plugs. In a Phoenix app the best place would probably be in your `web/web.ex`.
 
 ### load_resource/2
 
@@ -60,7 +65,7 @@ Will load the `Project.User` having the id given in `conn.params["id"]` through 
 
 ### authorize_resource/2
 
-Checks whether or not the `current_user` can perform the given action on the given resource and assigns the result (true/false) to `conn.assigns.authorized`. It is up to you to decide what to do with the result.
+Checks whether or not the `current_user` for the request can perform the given action on the given resource and assigns the result (true/false) to `conn.assigns.authorized`. It is up to you to decide what to do with the result.
 
 For Phoenix applications, Canary determines the action automatically.
 
@@ -74,11 +79,11 @@ Authorizes the resource and then loads it if authorization succeeds. Again, the 
 
 In the following example, the `User` with the same id as the `current_user` is only loaded if authorization succeeds.
 
-### Example
+### Usage Example
 
 Let's say you have a Phoenix application with a `User` model, and you want to authorize the `current_user` for accessing `User` resources.
 
-Let's suppose that you have implemented Canada.Can in your `abilities.ex` like so:
+Let's suppose that you have a file named `lib/abilities.ex` that contains your Canada authorization rules like so:
 
 ```elixir
 defimpl Canada.Can, for: User do
@@ -95,7 +100,7 @@ get "/users/:id", UserController, :show
 delete "/users/:id", UserController, :delete
 ```
 
-To automatically load and authorize the  `Project.User` having the `id` given in the params, you would plug your `UserController` like so:
+To automatically load and authorize the  `Project.User` having the `id` given in the params, you would add the following plug to your `UserController`:
 
 ```elixir
 plug :load_and_authorize_resource, model: Project.User
