@@ -44,12 +44,9 @@ In order to use Canary, you will need, at minimum:
 
 - An Ecto record struct containing the user to authorize in `conn.assigns.current_user` (the key can be customized - see https://github.com/cpjk/canary#overriding-the-default-user).
 
-- Your Ecto repo specified in your `config/config.exs`:
-```elixir
-config :canary, repo: Project.Repo
-```
+- Your Ecto repo specified in your `config/config.exs`: `config :canary, repo: YourApp.Repo`
 
-Then, just `import Canary.Plugs` in order to use the plugs. In a Phoenix app the best place would probably be in your `web/web.ex`.
+Then, just `import Canary.Plugs` in order to use the plugs. In a Phoenix app the best place would probably be inside `controller/0` in your `web/web.ex`, in order to make the functions available in all of your controllers.
 
 ### load_resource/2
 
@@ -60,7 +57,7 @@ For example,
 ```elixir
 plug :load_resource, model: Project.User
 ```
-Will load the `Project.User` having the id given in `conn.params["id"]` through `Project.Repo`, into
+Will load the `Project.User` having the id given in `conn.params["id"]` through `YourApp.Repo`, into
 `conn.assigns.user`
 
 ### authorize_resource/2
