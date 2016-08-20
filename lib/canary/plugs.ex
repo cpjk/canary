@@ -314,15 +314,15 @@ defmodule Canary.Plugs do
   defp fetch_all(conn, opts) do
     repo = Application.get_env(:canary, :repo)
 
-    conn
+    conn.assigns
     |> Map.fetch(resource_name(conn, opts))
     |> case do # check if a resource is already loaded at the key
       :error ->
         from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
-      {:ok, resource} ->
-        case (resource.__struct__ == opts[:model]) do
+      {:ok, resources} ->
+        case (Enum.at(resources, 0).__struct__ == opts[:model]) do
           true  ->
-            resource
+            resources
           false ->
             from(m in opts[:model]) |> select([m], m) |> repo.all |> preload_if_needed(repo, opts)
         end

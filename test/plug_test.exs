@@ -110,11 +110,27 @@ defmodule PlugTest do
 
     assert load_resource(conn, opts) == expected
 
+    # when a resource of the desired type is already present in conn.assigns and the action is :index
+    # it does not clobber the old resource
+    params = %{}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :index}, assigns: %{posts: [%Post{id: 2}]}}, :get, "/posts", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :posts, [%Post{id: 2}])}
+
+    assert load_resource(conn, opts) == expected
+
     # when a resource of a different type is already present in conn.assigns
     # it replaces that resource with the desired resource
     params = %{"id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}, assigns: %{post: %User{id: 2}}}, :get, "/posts/1", params)
     expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
+
+    assert load_resource(conn, opts) == expected
+
+    # when a resource of a different type is already present in conn.assigns and the action is :index
+    # it replaces that resource with the desired resource
+    params = %{}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :index}, assigns: %{posts: [%User{id: 2}]}}, :get, "/posts", params)
+    expected = %{conn | assigns: Map.put(conn.assigns, :posts, [%Post{id: 1}, %Post{id: 2, user_id: 2}])}
 
     assert load_resource(conn, opts) == expected
 
