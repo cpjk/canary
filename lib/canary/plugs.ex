@@ -205,9 +205,11 @@ defmodule Canary.Plugs do
 
     case current_user |> can?(action, resource) do
       true  ->
-        %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+        conn
+        |> Plug.Conn.assign(:authorized, true)
+        |> Plug.Conn.assign(:request_resource, resource)
       false ->
-        %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+        Plug.Conn.assign(conn, :authorized, false)
     end
   end
 

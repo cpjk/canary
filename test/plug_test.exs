@@ -19,11 +19,14 @@ defmodule Repo do
 
   def get(Post, 1), do: %Post{id: 1}
   def get(Post, 2), do: %Post{id: 2, user_id: 2}
+  def get(Post, id: id, user_id: user_id), do: %Post{id: id, user_id: user_id}
+  def get(Post, id: id, user_id: user_id, slug: slug), do: %Post{id: id, user_id: user_id, slug: slug}
   def get(Post, _), do: nil
 
   def all(_), do: [%Post{id: 1}, %Post{id: 2, user_id: 2}]
 
   def preload(%Post{id: 1}, :user), do: %Post{id: 1}
+  def preload(%Post{id: id, user_id: user_id}, :user), do: %Post{id: id, user_id: user_id, user: %User{id: user_id}}
   def preload(%Post{id: 2, user_id: 2}, :user), do: %Post{id: 2, user_id: 2, user: %User{id: 2}}
   def preload([%Post{id: 1},  %Post{id: 2, user_id: 2}], :user), do: [%Post{id: 1}, %Post{id: 2, user_id: 2, user: %User{id: 2}}]
   def preload(resources, _), do: resources
@@ -226,7 +229,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :new},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Post}
       },
       :get,
       "/posts/new",
@@ -242,7 +245,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :create},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Post}
       },
       :get,
       "/posts/create",
@@ -258,7 +261,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :index},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Post}
       },
       :get,
       "/posts",
@@ -274,7 +277,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :show},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Repo.get(Post, id: 1, user_id: 1)}
       },
       :get,
       "/posts/1",
@@ -291,7 +294,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{},
-        assigns: %{current_user: %User{id: 1}, canary_action: :show}
+        assigns: %{current_user: %User{id: 1}, canary_action: :show, request_resource: Repo.get(Post, id: 1, user_id: 1)}
       },
       :get,
       "/posts/1",
@@ -340,7 +343,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{},
-        assigns: %{current_user: %User{id: 1}, canary_action: :show, post: %Post{user_id: 1}}
+        assigns: %{current_user: %User{id: 1}, canary_action: :show, post: %Post{id: 2}, request_resource: Repo.get(Post, id: 2, user_id: 1)}
       },
       :get,
       "/posts/2",
@@ -390,7 +393,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :new},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Post}
       },
       :get,
       "/posts/new",
@@ -406,7 +409,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :create},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Post}
       },
       :get,
       "/posts/create",
@@ -422,7 +425,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :index},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Post}
       },
       :get,
       "/posts",
@@ -438,7 +441,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :show},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Repo.get(Post, id: 1, user_id: 1, slug: "slug1")}
       },
       :get,
       "/posts/slug1",
@@ -455,7 +458,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{},
-        assigns: %{current_user: %User{id: 1}, canary_action: :show}
+        assigns: %{current_user: %User{id: 1}, canary_action: :show, request_resource: Repo.get(Post, id: 1, user_id: 1, slug: "slug1")}
       },
       :get,
       "/posts/slug1",
@@ -504,7 +507,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{},
-        assigns: %{current_user: %User{id: 1}, canary_action: :show, post: %Post{user_id: 1}}
+        assigns: %{current_user: %User{id: 1}, canary_action: :show, post: %Post{user_id: 1}, request_resource: %Post{user_id: 1}}
       },
       :get,
       "/posts/slug2",
@@ -553,7 +556,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :index},
-        assigns: %{current_user: %User{id: 2}}
+        assigns: %{current_user: %User{id: 2}, request_resource: Repo.get(Post, 2)}
       },
       :get,
       "/posts/post_id/comments",
@@ -571,7 +574,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :new},
-        assigns: %{current_user: %User{id: 2}}
+        assigns: %{current_user: %User{id: 2}, request_resource: Repo.get(Post, 2)}
       },
       :get,
       "/posts/post_id/comments/new",
@@ -589,7 +592,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :create},
-        assigns: %{current_user: %User{id: 2}}
+        assigns: %{current_user: %User{id: 2}, request_resource: Repo.get(Post, 2)}
       },
       :post,
       "/posts/post_id/comments",
@@ -609,7 +612,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :show},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Repo.get(Post, id: 1, user_id: 1)}
       },
       :get,
       "/posts/1",
@@ -643,7 +646,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{},
-        assigns: %{current_user: %User{id: 1}, canary_action: :show, post: %Post{user_id: 1}}
+        assigns: %{current_user: %User{id: 1}, canary_action: :show, post: %Post{user_id: 1}, request_resource: %Post{user_id: 1}}
       },
       :get,
       "/posts/2",
@@ -668,7 +671,7 @@ defmodule PlugTest do
     )
     expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
     expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
-
+IE
     assert load_and_authorize_resource(conn, opts) == expected
 
     # when the given resource cannot be loaded
@@ -697,7 +700,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :show},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Repo.get(Post, id: 1, user_id: 1, slug: "slug1")}
       },
       :get,
       "/posts/slug1",
@@ -731,7 +734,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{},
-        assigns: %{current_user: %User{id: 1}, canary_action: :show, post: %Post{user_id: 1}}
+        assigns: %{current_user: %User{id: 1}, canary_action: :show, post: %Post{user_id: 1}, request_resource: %Post{user_id: 1}}
       },
       :get,
       "/posts/slug2",
@@ -783,7 +786,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :index},
-        assigns: %{current_user: %User{id: 2}}
+        assigns: %{current_user: %User{id: 2}, request_resource: Repo.get(Post, id: 2, user_id: 2)}
       },
       :get,
       "/posts/2/comments",
@@ -802,7 +805,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :new},
-        assigns: %{current_user: %User{id: 2}}
+        assigns: %{current_user: %User{id: 2}, request_resource: Repo.get(Post, id: 2, user_id: 2)}
       },
       :get,
       "/posts/2/comments/new",
@@ -821,7 +824,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :create},
-        assigns: %{current_user: %User{id: 2}}
+        assigns: %{current_user: %User{id: 2}, request_resource: Repo.get(Post, id: 2, user_id: 2)}
       },
       :create,
       "/posts/2/comments",
@@ -875,7 +878,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :show},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Repo.get(Post, 1)}
       },
       :get,
       "/posts/1",
@@ -910,7 +913,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :show},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Repo.get(Post, id: 1, user_id: 1)}
       },
       :get,
       "/posts/1",
@@ -999,7 +1002,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :show},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Repo.get(Post, 1)}
       },
       :get,
       "/posts/1",
@@ -1049,7 +1052,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :show},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Repo.get(Post, 1)}
       },
       :get,
       "/posts/1",
@@ -1087,7 +1090,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :new},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Post}
       },
       :get,
       "/posts/new",
@@ -1109,7 +1112,7 @@ defmodule PlugTest do
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :show},
-        assigns: %{current_user: %User{id: 1}}
+        assigns: %{current_user: %User{id: 1}, request_resource: Repo.get(Post, id: 1, user_id: 1)}
       },
       :get,
       "/posts/1",
@@ -1302,7 +1305,7 @@ defmodule PlugTest do
       conn = conn(
         %Plug.Conn{
           private: %{phoenix_action: :show},
-          assigns: %{user: %User{id: 1}, authorized: true}
+          assigns: %{user: %User{id: 1}, authorized: true, request_resource: Repo.get(Post, 1)}
         },
         :get,
         "/posts/1",
@@ -1384,10 +1387,11 @@ defmodule PlugTest do
 
       # when the action is "edit"
       params = %{"id" => 2}
+
       conn = conn(
         %Plug.Conn{
           private: %{phoenix_action: :edit},
-          assigns: %{current_user: %User{id: 2}}
+          assigns: %{current_user: %User{id: 2}, request_resource: Repo.preload(Repo.get(Post, id: 2, user_id: 2), :user)}
         },
         :get,
         "/posts/edit/2",
@@ -1403,7 +1407,7 @@ defmodule PlugTest do
       conn = conn(
         %Plug.Conn{
           private: %{phoenix_action: :index},
-          assigns: %{current_user: %User{id: 1}}
+          assigns: %{current_user: %User{id: 1}, request_resource: Post}
         },
         :get,
         "/posts",
@@ -1420,10 +1424,11 @@ defmodule PlugTest do
       # when the current user can access the given resource
       # and the resource can be loaded and the association exists
       params = %{"id" => 2}
+
       conn = conn(
         %Plug.Conn{
           private: %{phoenix_action: :show},
-          assigns: %{current_user: %User{id: 2}}
+          assigns: %{current_user: %User{id: 2}, request_resource: Repo.preload(Repo.get(Post, id: 2, user_id: 2), :user)}
         },
         :get,
         "/posts/2",
@@ -1441,7 +1446,7 @@ defmodule PlugTest do
       conn = conn(
         %Plug.Conn{
           private: %{phoenix_action: :show},
-          assigns: %{current_user: %User{id: 1}}
+          assigns: %{current_user: %User{id: 1}, request_resource: Repo.get(Post, id: 1, user_id: 1)}
         },
         :get,
         "/posts/1",
@@ -1457,7 +1462,7 @@ defmodule PlugTest do
       conn = conn(
         %Plug.Conn{
           private: %{phoenix_action: :edit},
-          assigns: %{current_user: %User{id: 2}}
+          assigns: %{current_user: %User{id: 2}, request_resource: Repo.preload(Repo.get(Post, id: 2, user_id: 2), :user)}
         },
         :get,
         "/posts/edit/2",
