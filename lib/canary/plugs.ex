@@ -193,7 +193,7 @@ defmodule Canary.Plugs do
     current_user = Dict.fetch! conn.assigns, current_user_name
     action = get_action(conn)
     is_persisted = persisted?(opts)
-    non_id_actions = if opts[:non_id], do: ([:index, :new, :create] ++ opts[:non_id]), else: [:index, :new, :create]
+    non_id_actions = if opts[:non_id_actions], do: Enum.concat([:index, :new, :create], opts[:non_id_actions]), else: [:index, :new, :create]
 
     resource = cond do
       is_persisted ->
@@ -432,7 +432,7 @@ defmodule Canary.Plugs do
 
   defp handle_not_found(conn, opts) do
     action = get_action(conn)
-    non_id_actions = if opts[:non_id], do: ([:index, :new, :create] ++ opts[:non_id]), else: [:index, :new, :create]
+    non_id_actions = if opts[:non_id_actions], do: Enum.concat([:index, :new, :create], opts[:non_id_actions]), else: [:index, :new, :create]
 
     case is_nil(Map.get(conn.assigns, resource_name(conn, opts)))
       and not action in non_id_actions do
