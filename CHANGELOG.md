@@ -1,6 +1,10 @@
 ## Changelog
 
-## v0.14.1
+## v1.0
+  * Bug fixes
+    * Do not clobber resources in the `Conn` on index action if they are of the same model
+
+## v0.14.2
   * Relax Ecto version requirements
 
 ## v0.14.1
