@@ -55,10 +55,10 @@ Loads the resource having the id given in `conn.params["id"]` from the database 
 For example,
 
 ```elixir
-plug :load_resource, model: Project.User
+plug :load_resource, model: Project.Post
 ```
-Will load the `Project.User` having the id given in `conn.params["id"]` through `YourApp.Repo`, into
-`conn.assigns.user`
+Will load the `Project.Post` having the id given in `conn.params["id"]` through `YourApp.Repo`, into
+`conn.assigns.post`
 
 ### authorize_resource/2
 
@@ -74,17 +74,17 @@ In order to authorize resources, you must specify permissions by implementing th
 
 Authorizes the resource and then loads it if authorization succeeds. Again, the resource is loaded into `conn.assigns.<resource_name>`.
 
-In the following example, the `User` with the same id as the `current_user` is only loaded if authorization succeeds.
+In the following example, the `Post` with the same `user_id` as the `current_user` is only loaded if authorization succeeds.
 
 ### Usage Example
 
-Let's say you have a Phoenix application with a `User` model, and you want to authorize the `current_user` for accessing `User` resources.
+Let's say you have a Phoenix application with a `Post` model, and you want to authorize the `current_user` for accessing `Post` resources.
 
 Let's suppose that you have a file named `lib/abilities.ex` that contains your Canada authorization rules like so:
 
 ```elixir
 defimpl Canada.Can, for: User do
-  def can?(%User{ id: user_id }, action, %User{ id: user_id })
+  def can?(%User{ id: user_id }, action, %Post{ user_id: user_id })
     when action in [:show], do: true
 
   def can?(%User{ id: user_id }, _, _), do: false
@@ -93,21 +93,19 @@ end
 and in your `web/router.ex:` you have:
 
 ```elixir
-get "/users/:id", UserController, :show
-delete "/users/:id", UserController, :delete
+get "/posts/:id", PostController, :show
+delete "/posts/:id", PostController, :delete
 ```
 
-To automatically load and authorize the  `Project.User` having the `id` given in the params, you would add the following plug to your `UserController`:
+To automatically load and authorize on the `Post` having the `id` given in the params, you would add the following plug to your `PostController`:
 
 ```elixir
-plug :load_and_authorize_resource, model: Project.User
+plug :load_and_authorize_resource, model: Post
 ```
 
-In this case, the `Project.User` specified by `conn.params["id"]` is loaded into `conn.assigns.user` for `GET /users/12`, but _not_ for `DELETE /users/12`.
+In this case, on `GET /posts/12` authorization succeeds, and the `Post` specified by `conn.params["id]` will be loaded into `conn.assigns.post`.
 
-In this case, on `GET /users/12` authorization succeeds, and the `Project.User` specified by `conn.params["id]` will be loaded into `conn.assigns.user`.
-
-However, on `DELETE /users/12`, authorization fails and the resource is not loaded.
+However, on `DELETE /posts/12`, authorization fails and the `Post` resource is not loaded.
 
 ### Excluding actions
 
@@ -118,13 +116,13 @@ For example,
 Single action form:
 
 ```elixir
-plug :load_and_authorize_resource, model: Project.User, except: :show
+plug :load_and_authorize_resource, model: Post, except: :show
 ```
 
 List form:
 
 ```elixir
-plug :load_and_authorize_resource, model: Project.User, except: [:show, :create]
+plug :load_and_authorize_resource, model: Post, except: [:show, :create]
 ```
 
 ### Authorizing only specific actions
@@ -136,16 +134,16 @@ For example,
 Single action form:
 
 ```elixir
-plug :load_and_authorize_resource, model: Project.User, only: :show
+plug :load_and_authorize_resource, model: Post, only: :show
 ```
 
 List form:
 
 ```elixir
-plug :load_and_authorize_resource, model: Project.User, only: [:show, :create]
+plug :load_and_authorize_resource, model: Post, only: [:show, :create]
 ```
 
-Note: Passing both `:only` and `:except` to a plug is invalid. Currently, the plug will simply pass the `Conn` along unchanged.
+Note: Passing both `:only` and `:except` to a plug is invalid. Canary will simply pass the `Conn` along unchanged.
 
 ### Overriding the default user
 
@@ -157,10 +155,10 @@ config :canary, current_user: :some_current_user
 
 In this case, canary will look for the current user record in `conn.assigns.some_current_user`.
 
-The current user can also be overridden for individual plugs as follows:
+The current user key can also be overridden for individual plugs as follows:
 
 ```elixir
-plug :load_and_authorize_resource, model: Project.User, current_user: :current_admin
+plug :load_and_authorize_resource, model: Post, current_user: :current_admin
 ```
 
 ### Specifying resource_name
@@ -170,7 +168,7 @@ To specify the name under which the loaded resource is stored, pass the `:as` fl
 For example,
 
 ```elixir
-plug :load_and_authorize_resource, model: Project.Post, as: :new_post
+plug :load_and_authorize_resource, model: Post, as: :new_post
 ```
 
 will load the post into `conn.assigns.new_post`
@@ -180,7 +178,7 @@ will load the post into `conn.assigns.new_post`
 Associations can be preloaded with `Repo.preload` by passing the `:preload` option with the name of the association:
 
 ```elixir
-plug :load_and_authorize_resource, model: Project.User, preload: :posts
+plug :load_and_authorize_resource, model: Post, preload: :comments
 ```
 
 ### A note about index, new, and create actions
@@ -190,7 +188,7 @@ should be the *module* name of the model rather than a struct.
 
 For example, when authorizing access to the `Post` resource,
 
-use
+you should use
 
 ```elixir
 def can?(%User{}, :index, Post), do: true
@@ -205,11 +203,12 @@ def can?(%User{}, :index, %Post{}), do: true
 ### Implementing Canada.Can for an anonymous user
 
 You may wish to define permissions for when there is no logged in current user (when `conn.assigns.current_user` is `nil`).
-In this case, you can implement `Canada.Can` for `nil` like so:
+In this case, you should implement `Canada.Can` for `nil` like so:
 
 ```elixir
 defimpl Canada.Can, for: Atom do
-  # When the user is not logged in, authorization should always fail
+  # When the user is not logged in, all they can do is read Posts
+  def can?(nil, :show, %Post{}), do: true
   def can?(nil, _, _), do: false
 end
 ```
@@ -244,7 +243,7 @@ plug :load_and_authorize_resource, model: Post, id_name: "slug", id_field: "slug
 
 to load and authorize the resource `Post` with the slug specified by `conn.params["slug"]` value.
 
-In this case in your `web/router.ex` you should have something like:
+If you are using Phoenix, your `web/router.ex` should contain something like:
 
 ```elixir
 resources "/posts", PostController, param: "slug"
@@ -289,7 +288,7 @@ plug :load_and_authorize_resource Post,
   not_found_handler: {Helpers, :handle_not_found}
 ```
 
-Tip: If you wish the request handling to stop after the handler function exits, e.g. when redirecting, be sure to call `Plug.Conn.halt/1` within your handler like so:
+Tip: If you would like the request handling to stop after the handler function exits, e.g. when redirecting, be sure to call `Plug.Conn.halt/1` within your handler like so:
 
 ```elixir
 def handle_unauthorized(conn) do
