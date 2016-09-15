@@ -110,7 +110,7 @@ defmodule Canary.Plugs do
         fetch_resource(conn, opts)
     end
 
-    %{conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), loaded_resource)}
+    Plug.Conn.assign(conn, resource_name(conn, opts), loaded_resource)
   end
 
   @doc """
@@ -203,7 +203,7 @@ defmodule Canary.Plugs do
         fetch_resource(conn, opts)
     end
 
-    %{conn | assigns: Map.put(conn.assigns, :authorized, can?(current_user, action, resource))}
+    Plug.Conn.assign(conn, :authorized, can?(current_user, action, resource))
   end
 
   @doc """
@@ -276,7 +276,7 @@ defmodule Canary.Plugs do
   defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: true}}, _opts),
     do: conn
   defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: false}}, opts),
-    do: %{conn | assigns: Map.put(conn.assigns, resource_name(conn, opts), nil)}
+    do: Plug.Conn.assign(conn, resource_name(conn, opts), nil)
 
   defp fetch_resource(conn, opts) do
     repo = Application.get_env(:canary, :repo)
