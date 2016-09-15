@@ -3,7 +3,7 @@ defmodule User do
 end
 
 defmodule Post do
-  use Ecto.Model
+  use Ecto.Schema
 
   schema "posts" do
     belongs_to :user, :integer, define_field: false # :defaults not working so define own field with default value
