@@ -203,12 +203,7 @@ defmodule Canary.Plugs do
         fetch_resource(conn, opts)
     end
 
-    case current_user |> can?(action, resource) do
-      true  ->
-        %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-      false ->
-        %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    end
+    %{conn | assigns: Map.put(conn.assigns, :authorized, can?(current_user, action, resource))}
   end
 
   @doc """
