@@ -190,7 +190,7 @@ defmodule Canary.Plugs do
 
   defp _authorize_resource(conn, opts) do
     current_user_name = opts[:current_user] || Application.get_env(:canary, :current_user, :current_user)
-    current_user = Dict.fetch! conn.assigns, current_user_name
+    current_user = Map.fetch! conn.assigns, current_user_name
     action = get_action(conn)
     is_persisted = persisted?(opts)
 
@@ -203,12 +203,7 @@ defmodule Canary.Plugs do
         fetch_resource(conn, opts)
     end
 
-    case current_user |> can?(action, resource) do
-      true  ->
-        %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-      false ->
-        %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    end
+    %{conn | assigns: Map.put(conn.assigns, :authorized, can?(current_user, action, resource))}
   end
 
   @doc """
