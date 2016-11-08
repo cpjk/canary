@@ -106,7 +106,7 @@ defmodule PlugTest do
     # it does not clobber the old resource
     params = %{"id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}, assigns: %{post: %Post{id: 2}}}, :get, "/posts/1", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 2})}
+    expected = Plug.Conn.assign(conn, :post, %Post{id: 2})
 
     assert load_resource(conn, opts) == expected
 
@@ -114,7 +114,7 @@ defmodule PlugTest do
     # it does not clobber the old resource
     params = %{}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :index}, assigns: %{posts: [%Post{id: 2}]}}, :get, "/posts", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :posts, [%Post{id: 2}])}
+    expected = Plug.Conn.assign(conn, :posts, [%Post{id: 2}])
 
     assert load_resource(conn, opts) == expected
 
@@ -122,7 +122,7 @@ defmodule PlugTest do
     # it replaces that resource with the desired resource
     params = %{"id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}, assigns: %{post: %User{id: 2}}}, :get, "/posts/1", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
+    expected = Plug.Conn.assign(conn, :post, %Post{id: 1})
 
     assert load_resource(conn, opts) == expected
 
@@ -130,14 +130,14 @@ defmodule PlugTest do
     # it replaces that resource with the desired resource
     params = %{}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :index}, assigns: %{posts: [%User{id: 2}]}}, :get, "/posts", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :posts, [%Post{id: 1}, %Post{id: 2, user_id: 2}])}
+    expected = Plug.Conn.assign(conn, :posts, [%Post{id: 1}, %Post{id: 2, user_id: 2}])
 
     assert load_resource(conn, opts) == expected
 
     # when the resource with the id cannot be fetched
     params = %{"id" => 3}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/3", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
+    expected = Plug.Conn.assign(conn, :post, nil)
 
     assert load_resource(conn, opts) == expected
 
@@ -145,7 +145,7 @@ defmodule PlugTest do
     # when the action is "index"
     params = %{}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :index}}, :get, "/posts", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :posts, [%Post{id: 1}, %Post{id: 2, user_id: 2}])}
+    expected = Plug.Conn.assign(conn, :posts, [%Post{id: 1}, %Post{id: 2, user_id: 2}])
 
     assert load_resource(conn, opts) == expected
 
@@ -153,7 +153,7 @@ defmodule PlugTest do
     # when the action is "new"
     params = %{}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :new}}, :get, "/posts/new", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
+    expected = Plug.Conn.assign(conn, :post, nil)
 
     assert load_resource(conn, opts) == expected
 
@@ -161,7 +161,7 @@ defmodule PlugTest do
     # when the action is "create"
     params = %{}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :create}}, :post, "/posts/create", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
+    expected = Plug.Conn.assign(conn, :post, nil)
 
     assert load_resource(conn, opts) == expected
   end
@@ -172,7 +172,7 @@ defmodule PlugTest do
     # when id param is correct
     params = %{"post_id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
+    expected = Plug.Conn.assign(conn, :post, %Post{id: 1})
 
     assert load_resource(conn, opts) == expected
   end
@@ -183,7 +183,7 @@ defmodule PlugTest do
     # when slug param is correct
     params = %{"slug" => "slug1"}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/slug1", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1, slug: "slug1"})}
+    expected = Plug.Conn.assign(conn, :post, %Post{id: 1, slug: "slug1"})
 
     assert load_resource(conn, opts) == expected
   end
@@ -193,7 +193,7 @@ defmodule PlugTest do
 
     params = %{"user_id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :index}}, :get, "/users/1/posts", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :user, %User{id: 1})}
+    expected = Plug.Conn.assign(conn, :user, %User{id: 1})
 
     assert load_resource(conn, opts) == expected
   end
@@ -203,7 +203,7 @@ defmodule PlugTest do
 
     params = %{"user_id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :new}}, :get, "/users/1/posts/new", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :user, %User{id: 1})}
+    expected = Plug.Conn.assign(conn, :user, %User{id: 1})
 
     assert load_resource(conn, opts) == expected
   end
@@ -213,7 +213,7 @@ defmodule PlugTest do
 
     params = %{"user_id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :create}}, :post, "/users/1/posts", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :user, %User{id: 1})}
+    expected = Plug.Conn.assign(conn, :user, %User{id: 1})
 
     assert load_resource(conn, opts) == expected
   end
@@ -232,7 +232,7 @@ defmodule PlugTest do
       "/posts/new",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -248,7 +248,7 @@ defmodule PlugTest do
       "/posts/create",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -264,7 +264,7 @@ defmodule PlugTest do
       "/posts",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -280,7 +280,7 @@ defmodule PlugTest do
       "/posts/1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -297,7 +297,7 @@ defmodule PlugTest do
       "/posts/1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -314,7 +314,7 @@ defmodule PlugTest do
       "/posts/1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = Plug.Conn.assign(conn, :authorized, false)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -330,7 +330,7 @@ defmodule PlugTest do
       "/posts/2",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = Plug.Conn.assign(conn, :authorized, false)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -346,7 +346,7 @@ defmodule PlugTest do
       "/posts/2",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -362,7 +362,7 @@ defmodule PlugTest do
       "/posts/2",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = Plug.Conn.assign(conn, :authorized, false)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -377,7 +377,7 @@ defmodule PlugTest do
       "/posts",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = Plug.Conn.assign(conn, :authorized, false)
 
     assert authorize_resource(conn, opts) == expected
   end
@@ -396,7 +396,7 @@ defmodule PlugTest do
       "/posts/new",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -412,7 +412,7 @@ defmodule PlugTest do
       "/posts/create",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -428,7 +428,7 @@ defmodule PlugTest do
       "/posts",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -444,7 +444,7 @@ defmodule PlugTest do
       "/posts/slug1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -461,7 +461,7 @@ defmodule PlugTest do
       "/posts/slug1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -478,7 +478,7 @@ defmodule PlugTest do
       "/posts/slug1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = Plug.Conn.assign(conn, :authorized, false)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -494,7 +494,7 @@ defmodule PlugTest do
       "/posts/slug2",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = Plug.Conn.assign(conn, :authorized, false)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -510,7 +510,7 @@ defmodule PlugTest do
       "/posts/slug2",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -526,7 +526,7 @@ defmodule PlugTest do
       "/posts/slug2",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = Plug.Conn.assign(conn, :authorized, false)
 
     assert authorize_resource(conn, opts) == expected
 
@@ -541,7 +541,7 @@ defmodule PlugTest do
       "/posts",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
+    expected = Plug.Conn.assign(conn, :authorized, false)
 
     assert authorize_resource(conn, opts) == expected
   end
@@ -559,7 +559,7 @@ defmodule PlugTest do
       "/posts/post_id/comments",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
   end
@@ -577,7 +577,7 @@ defmodule PlugTest do
       "/posts/post_id/comments/new",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
   end
@@ -595,7 +595,7 @@ defmodule PlugTest do
       "/posts/post_id/comments",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
   end
@@ -615,8 +615,9 @@ defmodule PlugTest do
       "/posts/1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 1, user_id: 1})}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, true)
+    |> Plug.Conn.assign(:post, %Post{id: 1, user_id: 1})
 
     assert load_and_authorize_resource(conn, opts) == expected
 
@@ -632,8 +633,10 @@ defmodule PlugTest do
       "/posts/2",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+
+    expected = conn
+    |> Plug.Conn.assign(:authorized, false)
+    |> Plug.Conn.assign(:post, nil)
 
     assert load_and_authorize_resource(conn, opts) == expected
 
@@ -649,8 +652,9 @@ defmodule PlugTest do
       "/posts/2",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{user_id: 1})}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, true)
+    |> Plug.Conn.assign(:post, %Post{user_id: 1})
 
     assert load_and_authorize_resource(conn, opts) == expected
 
@@ -666,8 +670,9 @@ defmodule PlugTest do
       "/posts/2",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, false)
+    |> Plug.Conn.assign(:post, nil)
 
     assert load_and_authorize_resource(conn, opts) == expected
 
@@ -682,8 +687,9 @@ defmodule PlugTest do
       "/posts/1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, false)
+    |> Plug.Conn.assign(:post, nil)
 
     assert load_and_authorize_resource(conn, opts) == expected
   end
@@ -703,8 +709,9 @@ defmodule PlugTest do
       "/posts/slug1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 1, slug: "slug1", user_id: 1})}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, true)
+    |> Plug.Conn.assign(:post, %Post{id: 1, slug: "slug1", user_id: 1})
 
     assert load_and_authorize_resource(conn, opts) == expected
 
@@ -720,8 +727,9 @@ defmodule PlugTest do
       "/posts/slug2",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, false)
+    |> Plug.Conn.assign(:post, nil)
 
     assert load_and_authorize_resource(conn, opts) == expected
 
@@ -737,8 +745,9 @@ defmodule PlugTest do
       "/posts/slug2",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{user_id: 1})}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, true)
+    |> Plug.Conn.assign(:post, %Post{user_id: 1})
 
     assert load_and_authorize_resource(conn, opts) == expected
 
@@ -754,8 +763,9 @@ defmodule PlugTest do
       "/posts/slug2",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, false)
+    |> Plug.Conn.assign(:post, nil)
 
     assert load_and_authorize_resource(conn, opts) == expected
 
@@ -770,8 +780,9 @@ defmodule PlugTest do
       "/posts/slug3",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, false)
+    |> Plug.Conn.assign(:post, nil)
 
     assert load_and_authorize_resource(conn, opts) == expected
   end
@@ -789,8 +800,9 @@ defmodule PlugTest do
       "/posts/2/comments",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 2, user_id: 2})}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, true)
+    |> Plug.Conn.assign(:post, %Post{id: 2, user_id: 2})
 
     assert load_and_authorize_resource(conn, opts) == expected
   end
@@ -808,8 +820,9 @@ defmodule PlugTest do
       "/posts/2/comments/new",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 2, user_id: 2})}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, true)
+    |> Plug.Conn.assign(:post, %Post{id: 2, user_id: 2})
 
     assert load_and_authorize_resource(conn, opts) == expected
   end
@@ -827,8 +840,9 @@ defmodule PlugTest do
       "/posts/2/comments",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 2, user_id: 2})}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, true)
+    |> Plug.Conn.assign(:post, %Post{id: 2, user_id: 2})
 
     assert load_and_authorize_resource(conn, opts) == expected
   end
@@ -846,7 +860,7 @@ defmodule PlugTest do
       "/posts/1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
+    expected = Plug.Conn.assign(conn, :post, %Post{id: 1})
 
     assert load_resource(conn, opts) == expected
 
@@ -881,7 +895,7 @@ defmodule PlugTest do
       "/posts/1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
     assert authorize_resource(conn, opts) == expected
 
 
@@ -916,8 +930,9 @@ defmodule PlugTest do
       "/posts/1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{conn | assigns: Map.put(expected.assigns, :post, %Post{id: 1, user_id: 1})}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, true)
+    |> Plug.Conn.assign(:post, %Post{id: 1, user_id: 1})
 
     assert load_and_authorize_resource(conn, opts) == expected
 
@@ -1012,7 +1027,7 @@ defmodule PlugTest do
 
     # when the action is not exempt
     opts = [model: Post]
-    expected = %{conn | assigns: Map.put(expected.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
   end
@@ -1037,7 +1052,7 @@ defmodule PlugTest do
 
     # when the action is not exempt
     opts = [model: Post]
-    expected = %{conn | assigns: Map.put(expected.assigns, :post, %Post{id: 1, user_id: 1})}
+    expected = Plug.Conn.assign(conn, :post, %Post{id: 1, user_id: 1})
     assert load_resource(conn, opts) == expected
   end
 
@@ -1061,8 +1076,10 @@ defmodule PlugTest do
 
     # when the action is not exempt
     opts = [model: Post]
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 1, user_id: 1})}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, true)
+    |> Plug.Conn.assign(:post, %Post{id: 1, user_id: 1})
+
     assert load_and_authorize_resource(conn, opts) == expected
   end
 
@@ -1073,7 +1090,7 @@ defmodule PlugTest do
     # when the resource with the id can be fetched
     params = %{"id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :some_key, %Post{id: 1})}
+    expected = Plug.Conn.assign(conn, :some_key, %Post{id: 1})
 
     assert load_resource(conn, opts) == expected
   end
@@ -1093,7 +1110,7 @@ defmodule PlugTest do
       "/posts/new",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_resource(conn, opts) == expected
     # need to check that it works for authorization as well, and for load_and_authorize_resource
@@ -1115,8 +1132,9 @@ defmodule PlugTest do
       "/posts/1",
       params
     )
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :some_key, %Post{id: 1, user_id: 1})}
+    expected = conn
+    |> Plug.Conn.assign(:authorized, true)
+    |> Plug.Conn.assign(:some_key, %Post{id: 1, user_id: 1})
 
     assert load_and_authorize_resource(conn, opts) == expected
   end
@@ -1128,7 +1146,7 @@ defmodule PlugTest do
     # when the resource with the id can be fetched
     params = %{"id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
+    expected = Plug.Conn.assign(conn, :post, %Post{id: 1})
 
     assert load_resource(conn, opts) == expected
   end
@@ -1139,8 +1157,9 @@ defmodule PlugTest do
     params = %{"id" => 1}
     conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
                            private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    expected = Helpers.unauthorized_handler(expected)
+    expected = conn
+    |> Plug.Conn.assign(:authorized, false)
+    |> Helpers.unauthorized_handler
 
     assert authorize_resource(conn, opts) == expected
   end
@@ -1163,9 +1182,11 @@ defmodule PlugTest do
     params = %{"id" => 3}
     conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
       private: %{phoenix_action: :show}}, :get, "/posts/3", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
-    expected = Helpers.unauthorized_handler(expected)
+
+    expected = conn
+    |> Plug.Conn.assign(:authorized, false)
+    |> Plug.Conn.assign(:post, nil)
+    |> Helpers.unauthorized_handler
 
     assert load_and_authorize_resource(conn, opts) == expected
   end
@@ -1177,9 +1198,10 @@ defmodule PlugTest do
     params = %{"id" => 3}
     conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
       private: %{phoenix_action: :show}}, :get, "/posts/3", params)
-    expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-    expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
-    expected = expected
+
+    expected = conn
+    |> Plug.Conn.assign(:authorized, false)
+    |> Plug.Conn.assign(:post, nil)
     |> Helpers.non_halting_unauthorized_handler
     |> Helpers.not_found_handler
 
@@ -1196,8 +1218,10 @@ defmodule PlugTest do
       params = %{"id" => 1}
       conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
         private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-      expected = Helpers.unauthorized_handler(expected)
+
+      expected = conn
+      |> Plug.Conn.assign(:authorized, false)
+      |> Helpers.unauthorized_handler
 
       assert authorize_resource(conn, opts) == expected
     end
@@ -1209,9 +1233,11 @@ defmodule PlugTest do
       params = %{"id" => 3}
       conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
         private: %{phoenix_action: :show}}, :get, "/posts/3", params)
-      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, false)}
-      expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
-      expected = Helpers.unauthorized_handler(expected)
+
+      expected = conn
+      |> Plug.Conn.assign(:authorized, false)
+      |> Plug.Conn.assign(:post, nil)
+      |> Helpers.unauthorized_handler
 
       assert load_and_authorize_resource(conn, opts) == expected
     end
@@ -1227,8 +1253,9 @@ defmodule PlugTest do
       params = %{"id" => 1}
       conn = conn(%Plug.Conn{assigns: %{current_user: %User{id: 2}},
         private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-      expected = Helpers.unauthorized_handler(conn)
-      expected = %{expected | assigns: Map.put(expected.assigns, :authorized, false)}
+      expected = conn
+      |> Helpers.unauthorized_handler
+      |> Plug.Conn.assign(:authorized, false)
 
       assert authorize_resource(conn, opts) == expected
     end
@@ -1243,8 +1270,9 @@ defmodule PlugTest do
 
       params = %{"id" => 4}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/4", params)
-      expected = Helpers.not_found_handler(conn)
-      expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+      expected = conn
+      |> Helpers.not_found_handler
+      |> Plug.Conn.assign(:post, nil)
 
       assert load_resource(conn, opts) == expected
     end
@@ -1259,13 +1287,13 @@ defmodule PlugTest do
 
       params = %{"id" => 4}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/4", params)
-      expected = Helpers.not_found_handler(conn)
-      expected = %{expected | assigns: Map.put(expected.assigns, :post, nil)}
+      expected = conn
+      |> Helpers.not_found_handler
+      |> Plug.Conn.assign(:post, nil)
 
       assert load_resource(conn, opts) == expected
     end
   end
-
 
   defmodule CurrentUser do
     use ExUnit.Case, async: true
@@ -1342,7 +1370,7 @@ defmodule PlugTest do
       # when the resource with the id can be fetched and the association exists
       params = %{"id" => 2}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-      expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 2, user_id: 2, user: %User{id: 2}})}
+      expected = Plug.Conn.assign(conn, :post, %Post{id: 2, user_id: 2, user: %User{id: 2}})
 
       assert load_resource(conn, opts) == expected
 
@@ -1350,7 +1378,7 @@ defmodule PlugTest do
       # when the resource with the id can be fetched and the association does not exist
       params = %{"id" => 1}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-      expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1, user_id: 1})}
+      expected = Plug.Conn.assign(conn, :post, %Post{id: 1, user_id: 1})
 
       assert load_resource(conn, opts) == expected
 
@@ -1358,7 +1386,7 @@ defmodule PlugTest do
       # when the resource with the id cannot be fetched
       params = %{"id" => 3}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/3", params)
-      expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
+      expected = Plug.Conn.assign(conn, :post, nil)
 
       assert load_resource(conn, opts) == expected
 
@@ -1366,7 +1394,7 @@ defmodule PlugTest do
       # when the action is "index"
       params = %{}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :index}}, :get, "/posts", params)
-      expected = %{conn | assigns: Map.put(conn.assigns, :posts, [%Post{id: 1}, %Post{id: 2, user_id: 2, user: %User{id: 2}}])}
+      expected = Plug.Conn.assign(conn, :posts, [%Post{id: 1}, %Post{id: 2, user_id: 2, user: %User{id: 2}}])
 
       assert load_resource(conn, opts) == expected
 
@@ -1374,7 +1402,7 @@ defmodule PlugTest do
       # when the action is "new"
       params = %{}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :new}}, :get, "/posts/new", params)
-      expected = %{conn | assigns: Map.put(conn.assigns, :post, nil)}
+      expected = Plug.Conn.assign(conn, :post, nil)
 
       assert load_resource(conn, opts) == expected
     end
@@ -1393,7 +1421,7 @@ defmodule PlugTest do
         "/posts/edit/2",
         params
       )
-      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+      expected = Plug.Conn.assign(conn, :authorized, true)
 
       assert authorize_resource(conn, opts) == expected
 
@@ -1409,7 +1437,7 @@ defmodule PlugTest do
         "/posts",
         params
       )
-      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+      expected = Plug.Conn.assign(conn, :authorized, true)
 
       assert authorize_resource(conn, opts) == expected
     end
@@ -1429,8 +1457,9 @@ defmodule PlugTest do
         "/posts/2",
         params
       )
-      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-      expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 2, user_id: 2, user: %User{id: 2}})}
+      expected = conn
+      |> Plug.Conn.assign(:authorized, true)
+      |> Plug.Conn.assign(:post, %Post{id: 2, user_id: 2, user: %User{id: 2}})
 
       assert load_and_authorize_resource(conn, opts) == expected
 
@@ -1447,8 +1476,9 @@ defmodule PlugTest do
         "/posts/1",
         params
       )
-      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-      expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 1, user_id: 1})}
+      expected = conn
+      |> Plug.Conn.assign(:authorized, true)
+      |> Plug.Conn.assign(:post, %Post{id: 1, user_id: 1})
 
       assert load_and_authorize_resource(conn, opts) == expected
 
@@ -1463,8 +1493,9 @@ defmodule PlugTest do
         "/posts/edit/2",
         params
       )
-      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
-      expected = %{expected | assigns: Map.put(expected.assigns, :post, %Post{id: 2, user_id: 2, user: %User{id: 2}})}
+      expected = conn
+      |> Plug.Conn.assign(:authorized, true)
+      |> Plug.Conn.assign(:post, %Post{id: 2, user_id: 2, user: %User{id: 2}})
 
       assert load_and_authorize_resource(conn, opts) == expected
     end
@@ -1506,10 +1537,9 @@ defmodule PlugTest do
         "/posts/other-action",
         params
       )
-      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+      expected = Plug.Conn.assign(conn, :authorized, true)
 
       assert authorize_resource(conn, opts) == expected
     end
   end
-
 end
