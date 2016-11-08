@@ -48,7 +48,7 @@ defimpl Canada.Can, for: User do
   def can?(%User{}, :index, Post), do: true
 
   def can?(%User{}, action, Post)
-    when action in [:new, :create], do: true
+    when action in [:new, :create, :other_action], do: true
 
   def can?(%User{id: user_id}, action, %Post{user: %User{id: user_id}})
     when action in [:edit, :update], do: true
@@ -1469,4 +1469,47 @@ defmodule PlugTest do
       assert load_and_authorize_resource(conn, opts) == expected
     end
   end
+
+  defmodule NonIdActions do
+    use ExUnit.Case, async: true
+
+    test "it throws an error when the non_id_actions is not a list" do
+      # when opts[:non_id_actions] is set but not as a list 
+      opts = [model: Post, non_id_actions: :other_action]
+      params = %{"id" => 1}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :other_action},
+          assigns: %{current_user: %User{id: 1}, authorized: true}
+        },
+        :get,
+        "/posts/other-action",
+        params
+      )
+
+      assert_raise Protocol.UndefinedError, "protocol Enumerable not implemented for :other_action", fn->
+        authorize_resource(conn, opts)
+      end
+    end
+
+    test "it authorizes the resource correctly when non_id_actions is a list" do
+      # when opts[:non_id_actions] is set as a list
+      opts = [model: Post, non_id_actions: [:other_action]]
+
+      params = %{"id" => 1}
+      conn = conn(
+        %Plug.Conn{
+          private: %{phoenix_action: :other_action},
+          assigns: %{current_user: %User{id: 1}, authorized: true}
+       },
+        :get,
+        "/posts/other-action",
+        params
+      )
+      expected = %{conn | assigns: Map.put(conn.assigns, :authorized, true)}
+
+      assert authorize_resource(conn, opts) == expected
+    end
+  end
+
 end
