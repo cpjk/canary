@@ -1,5 +1,9 @@
 ## Changelog
 
+## v1.1.0
+  * Enhancements
+    * Add `non_id_actions` opt
+
 ## v1.0
   * Bug fixes
     * Do not clobber resources in the `Conn` on index action if they are of the same model
