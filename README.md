@@ -181,7 +181,7 @@ Associations can be preloaded with `Repo.preload` by passing the `:preload` opti
 plug :load_and_authorize_resource, model: Post, preload: :comments
 ```
 
-### A note about index, new, and create actions
+### Non-id actions
 
 For the `:index`, `:new`, and `:create` actions, the resource passed to the `Canada.Can` implementation
 should be the *module* name of the model rather than a struct.
@@ -198,6 +198,13 @@ instead of
 
 ```elixir
 def can?(%User{}, :index, %Post{}), do: true
+```
+
+You can specify additional actions for which Canary will authorize based on the model name, by passing the `non_id_actions` opt to the plug.
+
+For example,
+```elixir
+plug :authorize_resource, model: Post, non_id_actions: [:find_by_name]
 ```
 
 ### Implementing Canada.Can for an anonymous user
