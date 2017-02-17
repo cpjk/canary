@@ -308,5 +308,18 @@ end
 
 Note: If both an `:unauthorized_handler` and a `:not_found_handler` are specified for `load_and_authorize_resource`, and the request meets the criteria for both, the `:unauthorized_handler` will be called first.
 
+### Handling situation where the id is not enough to load a resource
+
+If you need to alter your load_resource queries beyond just pulling the id, you can set a scope parameter in your canary config that will accept the query, and the `conn`. Here's an example of how it might be used to set a table prefix (for multi-tenant solutions)
+
+```elixir
+config :canary, scope: fn(queryable, %{assigns: %{tenant: tenant}}) do
+  queryable
+  |> Ecto.Queryable.to_query
+  |> Map.put(:prefix, tenant)
+end
+```
+
+
 ## License
 MIT License. Copyright 2016 Chris Kelly.
