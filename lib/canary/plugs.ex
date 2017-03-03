@@ -276,18 +276,18 @@ defmodule Canary.Plugs do
   end
 
   # Only try to handle 404 if the response has not been sent during authorization handling
-  defp maybe_handle_not_found(conn = %{state: :sent}, _opts), do: conn
+  defp maybe_handle_not_found(%{state: :sent} = conn, _opts), do: conn
   defp maybe_handle_not_found(conn, opts), do: handle_not_found(conn, opts)
 
-  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: true}}, _opts),
+  defp purge_resource_if_unauthorized(%{assigns: %{authorized: true}} = conn, _opts),
     do: conn
-  defp purge_resource_if_unauthorized(conn = %{assigns: %{authorized: false}}, opts),
+  defp purge_resource_if_unauthorized(%{assigns: %{authorized: false}} = conn, opts),
     do: Plug.Conn.assign(conn, get_resource_name(conn, opts), nil)
 
   defp fetch_resource(conn, opts) do
     repo = Application.get_env(:canary, :repo)
 
-    field_name = (opts[:id_field] || "id")
+    field_name = Keyword.get(opts, :id_field, "id")
 
     get_map_args = %{String.to_atom(field_name) => get_resource_id(conn, opts)}
 
