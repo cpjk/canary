@@ -5,14 +5,14 @@ defmodule Canary.Mixfile do
     [app: :canary,
      version: "1.1.0",
      elixir: "~> 1.2",
-     package: package,
+     package: package(),
      description: """
      An authorization library to restrict what resources the current user is
      allowed to access, and load those resources for you.
      """,
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     deps: deps,
+     deps: deps(),
      consolidate_protocols: false,
      docs: [extras: ["README.md"]]]
   end
@@ -34,7 +34,9 @@ defmodule Canary.Mixfile do
      {:plug, "~> 1.0"},
      {:ex_doc, "~> 0.7", only: :dev},
      {:earmark, ">= 0.0.0", only: :dev},
-     {:mock, ">= 0.0.0", only: :test}
+     {:mock, ">= 0.0.0", only: :test},
+
+     {:credo, "~> 0.5", only: [:dev, :test]}
     ]
   end
 end
