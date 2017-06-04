@@ -181,6 +181,27 @@ defmodule Canary.Plugs do
   plug :load_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
   ```
   """
+  def authorize_controller(%{assigns: %{current_user: nil}} = conn, opts) do
+    conn
+    |> Plug.Conn.assign(:authorized, false)
+    |> handle_unauthorized(opts)
+  end
+  def authorize_controller(%{assigns: %{current_user: user},
+                             private: %{phoenix_controller: controller}} = conn, opts) do
+    current_user_name = opts[:current_user] || Application.get_env(:canary, :current_user, :current_user)
+    current_user = Map.fetch! conn.assigns, current_user_name
+    action = get_action(conn)
+
+    if action_valid?(conn, opts) do
+      conn
+      |> Plug.Conn.assign(:authorized, can?(current_user, action, controller))
+      |> handle_unauthorized(opts)
+    else
+      conn
+    end
+  end
+  def authorize_controller(conn, _), do: Plug.Conn.assign(conn, :authorized, true)
+
   def authorize_resource(conn, opts) do
     if action_valid?(conn, opts) do
       do_authorize_resource(conn, opts) |> handle_unauthorized(opts)

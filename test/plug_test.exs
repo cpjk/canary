@@ -42,6 +42,11 @@ end
 
 defimpl Canada.Can, for: User do
 
+  def can?(%User{}, :index, Myproject.SampleController), do: true
+
+  def can?(%User{id: _user_id}, action, Myproject.SampleController)
+  when action in [:index, :show, :new, :create, :update, :delete], do: true
+
   def can?(%User{id: user_id}, action, %Post{user_id: user_id})
   when action in [:index, :show, :new, :create], do: true
 
@@ -1505,7 +1510,7 @@ defmodule PlugTest do
     use ExUnit.Case, async: true
 
     test "it throws an error when the non_id_actions is not a list" do
-      # when opts[:non_id_actions] is set but not as a list 
+      # when opts[:non_id_actions] is set but not as a list
       opts = [model: Post, non_id_actions: :other_action]
       params = %{"id" => 1}
       conn = conn(
@@ -1541,5 +1546,132 @@ defmodule PlugTest do
 
       assert authorize_resource(conn, opts) == expected
     end
+  end
+
+  test "it authorizes the controller correctly" do
+    opts = [model: Post]
+
+    # when the action is "new"
+    params = %{}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :new, phoenix_controller: Myproject.SampleController},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/new",
+      params
+    )
+    expected = Plug.Conn.assign(conn, :authorized, true)
+
+    assert authorize_controller(conn, opts) == expected
+
+    # when the action is "create"
+    params = %{}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :create, phoenix_controller: Myproject.SampleController},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/create",
+      params
+    )
+    expected = Plug.Conn.assign(conn, :authorized, true)
+
+    assert authorize_controller(conn, opts) == expected
+
+    # when the action is "index"
+    params = %{}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :index, phoenix_controller: Myproject.SampleController},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts",
+      params
+    )
+    expected = Plug.Conn.assign(conn, :authorized, true)
+
+    assert authorize_controller(conn, opts) == expected
+
+    # when the action is a phoenix action
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show, phoenix_controller: Myproject.SampleController},
+        assigns: %{current_user: %User{id: 1}}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = Plug.Conn.assign(conn, :authorized, true)
+
+    assert authorize_controller(conn, opts) == expected
+
+    # when the current user can access the given resource
+    # and the action is specified in conn.assigns.canary_action
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{},
+        assigns: %{current_user: %User{id: 1}, canary_action: :show}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = Plug.Conn.assign(conn, :authorized, true)
+
+    assert authorize_controller(conn, opts) == expected
+
+    # when both conn.assigns.canary_action and conn.private.phoenix_action are defined
+    # it uses conn.assigns.canary_action for authorization
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_action: :show, phoenix_controller: Myproject.SampleController},
+        assigns: %{current_user: %User{id: 1}, canary_action: :unauthorized}
+      },
+      :get,
+      "/posts/1",
+      params
+    )
+    expected = Plug.Conn.assign(conn, :authorized, false)
+
+    assert authorize_controller(conn, opts) == expected
+
+
+    # when the current user cannot access the given action
+    params = %{"id" => 2}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_controller: Myproject.SampleController},
+        assigns: %{current_user: %User{id: 1}, canary_action: :someaction}
+      },
+      :get,
+      "/posts/2",
+      params
+    )
+    expected = Plug.Conn.assign(conn, :authorized, false)
+
+    assert authorize_controller(conn, opts) == expected
+
+    # when current_user is nil
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_controller: Myproject.SampleController},
+        assigns: %{current_user: nil, canary_action: :create}
+      },
+      :post,
+      "/posts",
+      params
+    )
+    expected = Plug.Conn.assign(conn, :authorized, false)
+
+    assert authorize_controller(conn, opts) == expected
   end
 end
