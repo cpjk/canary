@@ -63,6 +63,7 @@ end
 
 defimpl Canada.Can, for: Atom do
   def can?(nil, :create, Post), do: false
+  def can?(nil, :create, Myproject.SampleController), do: false
 end
 
 defmodule Helpers do
@@ -1612,12 +1613,12 @@ defmodule PlugTest do
     assert authorize_controller(conn, opts) == expected
 
     # when the current user can access the given resource
-    # and the action is specified in conn.assigns.canary_action
+    # and the action and controller are specified in conn.assigns.canary_action
     params = %{"id" => 1}
     conn = conn(
       %Plug.Conn{
         private: %{},
-        assigns: %{current_user: %User{id: 1}, canary_action: :show}
+        assigns: %{current_user: %User{id: 1}, canary_action: :show, canary_controller: Myproject.SampleController}
       },
       :get,
       "/posts/1",
