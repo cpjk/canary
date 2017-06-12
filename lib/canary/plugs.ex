@@ -116,6 +116,60 @@ defmodule Canary.Plugs do
   end
 
   @doc """
+  Authorize the current user against the calling controller.
+
+  In order to use this function,
+
+    1) `conn.assigns[Application.get_env(:canary, :current_user, :current_user)]` must be an ecto
+    struct representing the current user
+
+    2) `conn.private` must be a map (this should not be a problem unless you explicitly modified it)
+
+  authorize_controller checks for the name of the current controller in one of the following places
+    1) :phoenix_controller in conn.private
+    2) :canary_controller in conn.assigns
+  In case you are not using phoenix, make sure you set the controller name in the conn.assigns
+  Note that in case neither of :phoenix_controller or :canary_controller are found the requested
+    authorization will automatically fails
+
+  If authorization succeeds, sets `conn.assigns.authorized` to true.
+
+  If authorization fails, sets `conn.assigns.authorized` to false.
+
+  Optional opts:
+
+  * `:only` - Specifies which actions to authorize
+  * `:except` - Specifies which actions for which to skip authorization
+  * `:unauthorized_handler` - Specify a handler function to be called if the action is unauthorized
+
+  Examples:
+  ```
+  plug :authorize_controller
+
+  plug :authorize_controller, only: [:index, :show]
+
+  plug :authorize_controller, except: [:destroy]
+  ```
+  """
+  def authorize_controller(conn, opts) do
+    if action_valid?(conn, opts) do
+      do_authorize_controller(conn, opts) |> handle_unauthorized(opts)
+    else
+      conn
+    end
+  end
+
+  def do_authorize_controller(conn, opts) do
+    controller = conn.assigns[:canary_controller] || conn.private[:phoenix_controller]
+    current_user_name = opts[:current_user] ||
+      Application.get_env(:canary, :current_user, :current_user)
+    current_user = Map.fetch! conn.assigns, current_user_name
+    action = get_action(conn)
+
+    Plug.Conn.assign(conn, :authorized, can?(current_user, action, controller))
+  end
+
+  @doc """
   Authorize the current user for the given resource.
 
   In order to use this function,
@@ -181,22 +235,6 @@ defmodule Canary.Plugs do
   plug :load_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
   ```
   """
-  def authorize_controller(conn, opts) do
-    controller = conn.assigns[:canary_controller] || conn.private[:phoenix_controller]
-    current_user_name = opts[:current_user] ||
-      Application.get_env(:canary, :current_user, :current_user)
-    current_user = Map.fetch! conn.assigns, current_user_name
-    action = get_action(conn)
-
-    if action_valid?(conn, opts) do
-      conn
-      |> Plug.Conn.assign(:authorized, can?(current_user, action, controller))
-      |> handle_unauthorized(opts)
-    else
-      conn
-    end
-  end
-
   def authorize_resource(conn, opts) do
     if action_valid?(conn, opts) do
       do_authorize_resource(conn, opts) |> handle_unauthorized(opts)
