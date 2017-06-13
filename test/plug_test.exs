@@ -42,6 +42,11 @@ end
 
 defimpl Canada.Can, for: User do
 
+  def can?(%User{}, action, Myproject.PartialAccessController)
+  when action in [:index, :show], do: true
+  def can?(%User{}, action, Myproject.PartialAccessController)
+  when action in [:new, :create, :update, :delete], do: false
+
   def can?(%User{}, :index, Myproject.SampleController), do: true
 
   def can?(%User{id: _user_id}, action, Myproject.SampleController)
@@ -1672,6 +1677,36 @@ defmodule PlugTest do
       params
     )
     expected = Plug.Conn.assign(conn, :authorized, false)
+
+    assert authorize_controller(conn, opts) == expected
+
+    # when an action is restricted on a controller
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_controller: Myproject.PartialAccessController},
+        assigns: %{current_user: %User{id: 1}, canary_action: :new}
+      },
+      :post,
+      "/posts",
+      params
+    )
+    expected = Plug.Conn.assign(conn, :authorized, false)
+
+    assert authorize_controller(conn, opts) == expected
+
+    # when an action is authorized on a controller
+    params = %{"id" => 1}
+    conn = conn(
+      %Plug.Conn{
+        private: %{phoenix_controller: Myproject.PartialAccessController},
+        assigns: %{current_user: %User{id: 1}, canary_action: :show}
+      },
+      :post,
+      "/posts",
+      params
+    )
+    expected = Plug.Conn.assign(conn, :authorized, true)
 
     assert authorize_controller(conn, opts) == expected
   end
