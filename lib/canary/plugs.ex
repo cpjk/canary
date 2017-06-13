@@ -130,7 +130,7 @@ defmodule Canary.Plugs do
     2) :canary_controller in conn.assigns
   In case you are not using phoenix, make sure you set the controller name in the conn.assigns
   Note that in case neither of :phoenix_controller or :canary_controller are found the requested
-    authorization won't necessarily fails, rather it will trigger a can? function with user = nil
+    authorization won't necessarily fail, rather it will trigger a can? function with user assinged as nil
 
   If authorization succeeds, sets `conn.assigns.authorized` to true.
 
