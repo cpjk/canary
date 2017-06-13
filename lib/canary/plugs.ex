@@ -128,9 +128,10 @@ defmodule Canary.Plugs do
   authorize_controller checks for the name of the current controller in one of the following places
     1) :phoenix_controller in conn.private
     2) :canary_controller in conn.assigns
+
   In case you are not using phoenix, make sure you set the controller name in the conn.assigns
-  Note that in case neither of :phoenix_controller or :canary_controller are found the requested
-    authorization won't necessarily fail, rather it will trigger a can? function with user assinged as nil
+  Note that in case neither of `:phoenix_controller` or `:canary_controller` are found the requested
+    authorization won't necessarily fail, rather it will trigger a `.can?` function with a `nil` controller
 
   If authorization succeeds, sets `conn.assigns.authorized` to true.
 
@@ -159,7 +160,7 @@ defmodule Canary.Plugs do
     end
   end
 
-  def do_authorize_controller(conn, opts) do
+  defp do_authorize_controller(conn, opts) do
     controller = conn.assigns[:canary_controller] || conn.private[:phoenix_controller]
     current_user_name = opts[:current_user] ||
       Application.get_env(:canary, :current_user, :current_user)
