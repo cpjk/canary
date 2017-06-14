@@ -205,8 +205,15 @@ defmodule Canary.Plugs do
     ```
     def can?(%User{id: user_id}, :index, %Post{user_id: user_id}), do: true
     ```
-
     if you are dealing with a nested resource, such as, "/post/post_id/comments"
+
+
+    You can specify additional actions for which Canary will authorize based on the model name, by passing the `non_id_actions` opt to the plug.
+
+    For example,
+    ```elixir
+    plug :authorize_resource, model: Post, non_id_actions: [:find_by_name]
+    ```
 
   Required opts:
 
