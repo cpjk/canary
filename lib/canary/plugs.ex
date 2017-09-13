@@ -100,13 +100,20 @@ defmodule Canary.Plugs do
     action = get_action(conn)
     is_persisted = persisted?(opts)
 
+    create_actions =
+      if opts[:non_id_actions] do
+        Enum.concat([:new, :create], opts[:non_id_actions])
+      else
+        [:new, :create]
+      end
+
     loaded_resource =
       cond do
         is_persisted ->
           fetch_resource(conn, opts)
         action == :index ->
           fetch_all(conn, opts)
-        action in [:new, :create] ->
+        action in create_actions ->
           nil
         true ->
           fetch_resource(conn, opts)
