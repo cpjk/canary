@@ -337,7 +337,8 @@ defmodule Canary.Plugs do
     |> purge_resource_if_unauthorized(opts)
   end
 
-  # Only try to handle 404 if the response has not been sent during authorization handling
+  # Only try to handle 404 if the response has not been halted or sent during authorization handling
+  defp maybe_handle_not_found(%{halted: true} = conn, _opts), do: conn
   defp maybe_handle_not_found(%{state: :sent} = conn, _opts), do: conn
   defp maybe_handle_not_found(conn, opts), do: handle_not_found(conn, opts)
 
