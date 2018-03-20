@@ -70,6 +70,7 @@ defmodule Canary.Plugs do
   * `:id_field` - Specifies the name of the ID field in the database for searching :id_name value, defaults to "id".
   * `:persisted` - Specifies the resource should always be loaded from the database, defaults to false
   * `:not_found_handler` - Specify a handler function to be called if the resource is not found
+  * `:repo` - Specify an Ecto Repo to use instead of the default provided in the config
 
   Examples:
   ```
@@ -84,6 +85,8 @@ defmodule Canary.Plugs do
   plug :load_resource, model: Post, id_name: "post_id", only: [:new, :create], persisted: true
 
   plug :load_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
+
+  plug :load_resource, model: Post, repo: YourApp.Other.Repo
   ```
   """
   def load_resource(conn, opts) do
@@ -229,6 +232,7 @@ defmodule Canary.Plugs do
   * `:id_field` - Specifies the name of the ID field in the database for searching :id_name value, defaults to "id".
   * `:persisted` - Specifies the resource should always be loaded from the database, defaults to false
   * `:unauthorized_handler` - Specify a handler function to be called if the action is unauthorized
+  * `:repo` - Specify an Ecto Repo to use instead of the default provided in the config
 
   Examples:
   ```
@@ -238,9 +242,11 @@ defmodule Canary.Plugs do
 
   plug :authorize_resource, model: User, only: [:index, :show], preload: :posts
 
-  plug :load_resource, model: Post, id_name: "post_id", only: [:index], persisted: true, preload: :comments
+  plug :authorize_resource, model: Post, id_name: "post_id", only: [:index], persisted: true, preload: :comments
 
-  plug :load_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
+  plug :authorize_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
+
+  plug :authorize_resource, model: Post, repo: YourApp.Other.Repo
   ```
   """
   def authorize_resource(conn, opts) do
@@ -302,6 +308,7 @@ defmodule Canary.Plugs do
   * `:id_field` - Specifies the name of the ID field in the database for searching :id_name value, defaults to "id".
   * `:unauthorized_handler` - Specify a handler function to be called if the action is unauthorized
   * `:not_found_handler` - Specify a handler function to be called if the resource is not found
+  * `:repo` - Specify an Ecto Repo to use instead of the default provided in the config
 
   Note: If both an `:unauthorized_handler` and a `:not_found_handler` are specified for `load_and_authorize_resource`,
   and the request meets the criteria for both, the `:unauthorized_handler` will be called first.
@@ -317,6 +324,8 @@ defmodule Canary.Plugs do
   plug :load_and_authorize_resource, model: User, except: [:destroy]
 
   plug :load_and_authorize_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
+
+  plug :load_and_authorize_resource, model: Post, repo: YourApp.Other.Repo
   ```
   """
   def load_and_authorize_resource(conn, opts) do
@@ -347,7 +356,7 @@ defmodule Canary.Plugs do
     do: Plug.Conn.assign(conn, get_resource_name(conn, opts), nil)
 
   defp fetch_resource(conn, opts) do
-    repo = Application.get_env(:canary, :repo)
+    repo = Keyword.get(opts, :repo, Application.get_env(:canary, :repo))
 
     field_name = Keyword.get(opts, :id_field, "id")
 

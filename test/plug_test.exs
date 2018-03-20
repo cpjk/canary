@@ -40,6 +40,11 @@ defmodule Repo do
   def get_by(Post, %{slug: _}), do: nil
 end
 
+defmodule OtherRepo do
+  def get_by(User, %{id: 2}), do: %User{id: 2}
+  #def get(User, 2), do: %User{id: 2}
+end
+
 defimpl Canada.Can, for: User do
 
   def can?(%User{}, action, Myproject.PartialAccessController)
@@ -225,6 +230,16 @@ defmodule PlugTest do
     params = %{"user_id" => 1}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :create}}, :post, "/users/1/posts", params)
     expected = Plug.Conn.assign(conn, :user, %User{id: 1})
+
+    assert load_resource(conn, opts) == expected
+  end
+
+  test "it loads the resource correctly from the other repo" do
+    opts = [model: User, repo: OtherRepo]
+
+    params = %{"id" => 2}
+    conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/users/2", params)
+    expected = Plug.Conn.assign(conn, :user, %User{id: 2})
 
     assert load_resource(conn, opts) == expected
   end

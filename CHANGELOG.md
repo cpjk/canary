@@ -1,5 +1,9 @@
 ## Changelog
 
+## master
+  *
+    * Add `repo` as an override option to the plugs
+
 ## v1.1.0
   * Enhancements
     * Add `non_id_actions` opt

@@ -268,6 +268,16 @@ instead of
 /posts/1
 ```
 
+### Repo override
+
+You can tell Canary to use a different Repo by using the `:repo` option.
+
+For example, if you want to use the `YourApp.Other.Repo` in your controller instead of the default provided in the config:
+
+```elixir
+plug :load_and_authorize_resource, model: Post, repo: YourApp.Other.Repo
+```
+
 ### Handling unauthorized actions
 
 By default, when an action is unauthorized, Canary simply sets `conn.assigns.authorized` to `false`.
