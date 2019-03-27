@@ -488,12 +488,16 @@ defmodule Canary.Plugs do
 
   defp handle_not_found(conn, opts) do
     action = get_action(conn)
-    non_id_actions =
+    non_id_actions = unless opts[:persisted] do
+      default_non_id_actions = [:index, :new, :create]
       if opts[:non_id_actions] do
-        Enum.concat([:index, :new, :create], opts[:non_id_actions])
+        Enum.concat(default_non_id_actions, opts[:non_id_actions])
       else
-        [:index, :new, :create]
+        default_non_id_actions
       end
+    else
+      []
+    end
     resource_name = Map.get(conn.assigns, get_resource_name(conn, opts))
 
     if is_nil(resource_name) and not action in non_id_actions do
