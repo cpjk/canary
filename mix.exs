@@ -30,7 +30,7 @@ defmodule Canary.Mixfile do
   defp deps do
     [
      {:ecto, ">= 1.1.0"},
-     {:canada, "~> 1.0.1"},
+     {:canada, "~> 1.0.1 or ~> 2.0.0"},
      {:plug, "~> 1.0"},
      {:ex_doc, "~> 0.7", only: :dev},
      {:earmark, ">= 0.0.0", only: :dev},

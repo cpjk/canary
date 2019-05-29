@@ -1,5 +1,5 @@
 %{"bunt": {:hex, :bunt, "0.2.0", "951c6e801e8b1d2cbe58ebbd3e616a869061ddadcc4863d0a2182541acae9a38", [:mix], []},
-  "canada": {:hex, :canada, "1.0.1", "da96d0ff101a0c2a6cc7b07d92b8884ff6508f058781d3679999416feacf41c5", [:mix], []},
+  "canada": {:hex, :canada, "2.0.0", "ce5e058f576a0625959fc5427fcde15311fb28a5ebc13775eafd13468ad16553", [:mix], [], "hexpm"},
   "credo": {:hex, :credo, "0.6.1", "a941e2591bd2bd2055dc92b810c174650b40b8290459c89a835af9d59ac4a5f8", [:mix], [{:bunt, "~> 0.2.0", [hex: :bunt, optional: false]}]},
   "decimal": {:hex, :decimal, "1.1.2", "79a769d4657b2d537b51ef3c02d29ab7141d2b486b516c109642d453ee08e00c", [:mix], []},
   "earmark": {:hex, :earmark, "0.2.1", "ba6d26ceb16106d069b289df66751734802777a3cbb6787026dd800ffeb850f3", [:mix], []},
