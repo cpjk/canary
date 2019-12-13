@@ -1,4 +1,4 @@
-Canary
+Canary (Notice: This project is not actively maintained)
 ======
 [![Build Status](https://travis-ci.org/cpjk/canary.svg?branch=master)](https://travis-ci.org/cpjk/canary)
 [![Hex pm](https://img.shields.io/hexpm/v/canary.svg?style=flat)](https://hex.pm/packages/canary)
