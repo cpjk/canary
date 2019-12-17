@@ -1562,7 +1562,7 @@ defmodule PlugTest do
         params
       )
 
-      assert_raise Protocol.UndefinedError, "protocol Enumerable not implemented for :other_action", fn->
+      assert_raise Protocol.UndefinedError, ~r/protocol Enumerable not implemented for :other_action/, fn->
         authorize_resource(conn, opts)
       end
     end
