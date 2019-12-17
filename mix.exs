@@ -35,8 +35,7 @@ defmodule Canary.Mixfile do
      {:ex_doc, "~> 0.7", only: :dev},
      {:earmark, ">= 0.0.0", only: :dev},
      {:mock, ">= 0.0.0", only: :test},
-
-     {:credo, "~> 0.5", only: [:dev, :test]}
+     {:credo, "~> 1.0", only: [:dev, :test]}
     ]
   end
 end
