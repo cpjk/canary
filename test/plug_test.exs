@@ -229,6 +229,39 @@ defmodule PlugTest do
     assert load_resource(conn, opts) == expected
   end
 
+  test "it calls the specified action when not_found with opts[:required] specified on :new action" do
+    opts = [model: Post, not_found_handler: {Helpers, :not_found_handler}, required: true]
+
+    params = %{"id" => 3}
+    conn = conn(%Plug.Conn{assigns: %{post: nil}, private: %{phoenix_action: :new}}, :get, "/posts/3/new", params)
+
+    expected = Helpers.not_found_handler(conn)
+
+    assert load_resource(conn, opts) == expected
+  end
+
+  test "it calls the specified action when not_found with opts[:required] specified on :create action" do
+    opts = [model: Post, not_found_handler: {Helpers, :not_found_handler}, required: true]
+
+    params = %{"id" => 3}
+    conn = conn(%Plug.Conn{assigns: %{post: nil}, private: %{phoenix_action: :index}}, :post, "/posts/3/new", params)
+
+    expected = Helpers.not_found_handler(conn)
+
+    assert load_resource(conn, opts) == expected
+  end
+
+  test "it calls the specified action when not_found with opts[:required] specified on :index action" do
+    opts = [model: Post, not_found_handler: {Helpers, :not_found_handler}, required: true]
+
+    params = %{"id" => 3}
+    conn = conn(%Plug.Conn{assigns: %{post: nil}, private: %{phoenix_action: :index}}, :get, "/posts/3", params)
+
+    expected = Helpers.not_found_handler(conn)
+
+    assert load_resource(conn, opts) == expected
+  end
+
   test "it authorizes the resource correctly" do
     opts = [model: Post]
 
@@ -1529,7 +1562,7 @@ defmodule PlugTest do
         params
       )
 
-      assert_raise Protocol.UndefinedError, "protocol Enumerable not implemented for :other_action", fn->
+      assert_raise Protocol.UndefinedError, ~r/protocol Enumerable not implemented for :other_action/, fn->
         authorize_resource(conn, opts)
       end
     end
