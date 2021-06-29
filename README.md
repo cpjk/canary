@@ -1,4 +1,4 @@
-Canary
+Canary (Notice: This project is not actively maintained)
 ======
 [![Build Status](https://travis-ci.org/cpjk/canary.svg?branch=master)](https://travis-ci.org/cpjk/canary)
 [![Hex pm](https://img.shields.io/hexpm/v/canary.svg?style=flat)](https://hex.pm/packages/canary)
@@ -287,7 +287,7 @@ By default, when a resource is not found, Canary simply sets the resource in `co
 config :canary, not_found_handler: {Helpers, :handle_not_found}
 ```
 
-You can also specify handlers on an an individual basis (which will override the corresponding configured handler, if any) by specifying the corresponding `opt` in the plug call:
+You can also specify handlers on an individual basis (which will override the corresponding configured handler, if any) by specifying the corresponding `opt` in the plug call:
 
 ```elixir
 plug :load_and_authorize_resource Post,
