@@ -16,7 +16,7 @@ jobs:
         with:
           otp-version: ${{matrix.otp}}
           elixir-version: ${{matrix.elixir}}
-    - name: Restore dependencies cache
+      - name: Restore dependencies cache
         uses: actions/cache@v1
         id: mix-cache
         with:
