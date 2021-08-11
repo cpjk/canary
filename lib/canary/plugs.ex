@@ -70,6 +70,7 @@ defmodule Canary.Plugs do
   * `:id_field` - Specifies the name of the ID field in the database for searching :id_name value, defaults to "id".
   * `:persisted` - Specifies the resource should always be loaded from the database, defaults to false
   * `:not_found_handler` - Specify a handler function to be called if the resource is not found
+  * `:required` - Same as `:persisted` but with not found handler - even for :index, :new or :create action
 
   Examples:
   ```
@@ -438,7 +439,11 @@ defmodule Canary.Plugs do
   end
 
   defp persisted?(opts) do
-    !!Keyword.get(opts, :persisted, false)
+    !!Keyword.get(opts, :persisted, false) || !!Keyword.get(opts, :required, false)
+  end
+
+  defp required?(opts) do
+    !!Keyword.get(opts, :required, false)
   end
 
   defp get_resource_name(conn, opts) do
@@ -494,9 +499,10 @@ defmodule Canary.Plugs do
       else
         [:index, :new, :create]
       end
+    is_required = required?(opts)
     resource_name = Map.get(conn.assigns, get_resource_name(conn, opts))
 
-    if is_nil(resource_name) and not action in non_id_actions do
+    if is_nil(resource_name) and (is_required or not(action in non_id_actions)) do
       apply_error_handler(conn, :not_found_handler, opts)
     else
       conn
