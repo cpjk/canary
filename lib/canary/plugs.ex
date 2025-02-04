@@ -480,8 +480,6 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp handle_unauthorized(%{skip_canary_handler: true} = conn, _opts),
-    do: conn
   defp handle_unauthorized(%{assigns: %{authorized: true}} = conn, _opts),
     do: conn
   defp handle_unauthorized(%{assigns: %{authorized: false}} = conn, opts),
