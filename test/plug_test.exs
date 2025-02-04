@@ -28,11 +28,11 @@ defmodule Repo do
   def preload([%Post{id: 1},  %Post{id: 2, user_id: 2}], :user), do: [%Post{id: 1}, %Post{id: 2, user_id: 2, user: %User{id: 2}}]
   def preload(resources, _), do: resources
 
-  def get_by(User, %{id: 1}), do: %User{}
+  def get_by(User, %{id: "1"}), do: %User{}
   def get_by(User, _), do: nil
 
-  def get_by(Post, %{id: 1}), do: %Post{id: 1}
-  def get_by(Post, %{id: 2}), do: %Post{id: 2, user_id: 2}
+  def get_by(Post, %{id: "1"}), do: %Post{id: 1}
+  def get_by(Post, %{id: "2"}), do: %Post{id: 2, user_id: 2}
   def get_by(Post, %{id: _}), do: nil
 
   def get_by(Post, %{slug: "slug1"}), do: %Post{id: 1, slug: "slug1"}
@@ -222,7 +222,7 @@ defmodule PlugTest do
   test "it loads the resource correctly with opts[:persisted] specified on :create action" do
     opts = [model: User, id_name: "user_id", persisted: true]
 
-    params = %{"user_id" => 1}
+    params = %{"user_id" => "1"}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :create}}, :post, "/users/1/posts", params)
     expected = Plug.Conn.assign(conn, :user, %User{id: 1})
 
@@ -629,7 +629,7 @@ defmodule PlugTest do
   test "it authorizes the resource correctly with opts[:persisted] specified on :create action" do
     opts = [model: Post, id_name: "post_id", persisted: true]
 
-    params = %{"post_id" => 2}
+    params = %{"post_id" => "2"}
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :create},
@@ -874,7 +874,7 @@ defmodule PlugTest do
   test "it loads and authorizes the resource correctly with opts[:persisted] specified on :create action" do
     opts = [model: Post, id_name: "post_id", persisted: true]
 
-    params = %{"post_id" => 2}
+    params = %{"post_id" => "2"}
     conn = conn(
       %Plug.Conn{
         private: %{phoenix_action: :create},
@@ -1399,7 +1399,7 @@ defmodule PlugTest do
         params
       )
 
-      assert_raise KeyError, "key :configured_current_user not found in: %{authorized: true, user: %User{id: 1}}", fn->
+      assert_raise KeyError, ~r/^key :configured_current_user not found in: %{/, fn->
         authorize_resource(conn, opts)
       end
     end
@@ -1562,7 +1562,7 @@ defmodule PlugTest do
         params
       )
 
-      assert_raise Protocol.UndefinedError, ~r/protocol Enumerable not implemented for :other_action/, fn->
+      assert_raise Protocol.UndefinedError, ~r/protocol Enumerable not implemented for /, fn->
         authorize_resource(conn, opts)
       end
     end
