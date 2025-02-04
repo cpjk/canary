@@ -21,35 +21,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-    - name: Set up Elixir
-      uses: erlef/setup-elixir@v1
-      with:
-        elixir-version: ${{ matrix.elixir }}
-        otp-version: ${{ matrix.otp }}
+      - name: Install Erlang and Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
 
-    - name: Restore deps and _build cache
-      uses: actions/cache@v2
-      with:
-        path: |
-          deps
-          _build
-        key: deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
-        restore-keys: |
-          deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
+      - name: Restore deps and _build cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            deps
+            _build
+          key: deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
 
-    - name: Install dependencies
-      run: mix deps.get --only test
+      - name: Install dependencies
+        run: mix deps.get --only test
 
-    - name: Remove compiled application files
-      run: mix clean
+      - name: Remove compiled application files
+        run: mix clean
 
-    - name: Compile & lint dependencies
-      run: mix compile --warnings-as-errors
-      env:
-        MIX_ENV: test
+      - name: Compile & lint dependencies
+        run: mix compile --warnings-as-errors
+        env:
+          MIX_ENV: test
 
-    - name: Run tests
-      run: mix test
+      - name: Run tests
+        run: mix test
