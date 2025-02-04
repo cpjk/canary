@@ -15,8 +15,8 @@ jobs:
         include:
           - elixir: "1.18"
             otp: "27.2"
-          - elixir: "1.10.4"
-            otp: "21.3"
+          - elixir: "1.14"
+            otp: "25.3"
 
     runs-on: ubuntu-20.04
 
