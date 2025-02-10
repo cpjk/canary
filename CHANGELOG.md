@@ -1,5 +1,15 @@
 ## Changelog
 
+## v2.0.0-dev
+  * Enhancements
+    * added support for authorization LiveView
+    * added `:error_handler` and ErrorHandler behaviour
+    * aded  `:required` option
+
+  * Dependency changes
+    * Elixir ~> 1.14 is now required
+
+
 ## v1.2.0
   * Enhancements
     * Add `required` opt

@@ -1,14 +1,14 @@
 defmodule Canary.Plugs do
+  import Canary.Utils
   import Canada.Can, only: [can?: 3]
   import Ecto.Query
-  import Keyword, only: [has_key?: 2]
 
   @moduledoc """
   Plug functions for loading and authorizing resources for the current request.
 
   The plugs all store data in conn.assigns (in Phoenix applications, keys in conn.assigns can be accessed with `@key_name` in templates)
 
-  In order to use the plug functions, you must `use Canary`.
+  In order to use the plug functions, you must `import Canary.Plugs`.
 
   You must also specify the Ecto repo to use in your configuration:
   ```
@@ -19,14 +19,13 @@ defmodule Canary.Plugs do
   config :canary, current_user: :some_current_user
   ```
 
-  You can specify a handler function (in this case, `Helpers.handle_unauthorized`) to be called when an action is unauthorized like so:
+  You can specify a error handler module (in this case, `Helpers`) to be called when an action is unauthorized like so:
   ```elixir
-  config :canary, unauthorized_handler: {Helpers, :handle_unauthorized}
+  config :canary, error_handler: Helpers
   ```
-  or to handle when a resource is not found:
-  ```elixir
-  config :canary, not_found_handler: {Helpers, :handle_not_found}
-  ```
+
+  Module should implement the `Canary.ErrorHandler` behaviour.
+
   Canary will pass the `conn` to the handler function.
   """
 
@@ -69,8 +68,9 @@ defmodule Canary.Plugs do
   * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
   * `:id_field` - Specifies the name of the ID field in the database for searching :id_name value, defaults to "id".
   * `:persisted` - Specifies the resource should always be loaded from the database, defaults to false
-  * `:not_found_handler` - Specify a handler function to be called if the resource is not found
   * `:required` - Same as `:persisted` but with not found handler - even for :index, :new or :create action
+  * `:not_found_handler` - Specify a handler function to be called if the resource is not found
+
 
   Examples:
   ```
@@ -87,8 +87,11 @@ defmodule Canary.Plugs do
   plug :load_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
   ```
   """
+  @spec load_resource(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
   def load_resource(conn, opts) do
-    if action_valid?(conn, opts) do
+    action = get_action(conn)
+
+    if action_valid?(action, opts) do
       conn
       |> do_load_resource(opts)
       |> handle_not_found(opts)
@@ -156,8 +159,11 @@ defmodule Canary.Plugs do
   plug :authorize_controller, except: [:destroy]
   ```
   """
+  @spec authorize_controller(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
   def authorize_controller(conn, opts) do
-    if action_valid?(conn, opts) do
+    action = get_action(conn)
+
+    if action_valid?(action, opts) do
       do_authorize_controller(conn, opts) |> handle_unauthorized(opts)
     else
       conn
@@ -250,8 +256,11 @@ defmodule Canary.Plugs do
   plug :load_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
   ```
   """
+  @spec authorize_resource(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
   def authorize_resource(conn, opts) do
-    if action_valid?(conn, opts) do
+    action = get_action(conn)
+
+    if action_valid?(action, opts) do
       do_authorize_resource(conn, opts) |> handle_unauthorized(opts)
     else
       conn
@@ -333,7 +342,9 @@ defmodule Canary.Plugs do
   ```
   """
   def load_and_authorize_resource(conn, opts) do
-    if action_valid?(conn, opts) do
+    action = get_action(conn)
+
+    if action_valid?(action, opts) do
       do_load_and_authorize_resource(conn, opts)
     else
       conn
@@ -409,16 +420,6 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp get_resource_id(conn, opts) do
-    case opts[:id_name] do
-      nil ->
-        conn.params["id"]
-
-      id_name ->
-        conn.params[id_name]
-    end
-  end
-
   defp get_action(conn) do
     case Map.fetch(conn.assigns, :canary_action) do
       {:ok, action} -> action
@@ -426,48 +427,8 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp action_exempt?(conn, opts) do
-    action = get_action(conn)
-
-    if is_list(opts[:except]) && action in opts[:except] do
-      true
-    else
-      action == opts[:except]
-    end
-  end
-
-  defp action_included?(conn, opts) do
-    action = get_action(conn)
-
-    if is_list(opts[:only]) && action in opts[:only] do
-      true
-    else
-      action == opts[:only]
-    end
-  end
-
-  defp action_valid?(conn, opts) do
-    cond do
-      has_key?(opts, :except) && has_key?(opts, :only) ->
-        false
-
-      has_key?(opts, :except) ->
-        !action_exempt?(conn, opts)
-
-      has_key?(opts, :only) ->
-        action_included?(conn, opts)
-
-      true ->
-        true
-    end
-  end
-
   defp persisted?(opts) do
     !!Keyword.get(opts, :persisted, false) || !!Keyword.get(opts, :required, false)
-  end
-
-  defp required?(opts) do
-    !!Keyword.get(opts, :required, false)
   end
 
   defp get_resource_name(conn, opts) do
@@ -490,20 +451,6 @@ defmodule Canary.Plugs do
       name <> "s"
     else
       name
-    end
-  end
-
-  defp preload_if_needed(nil, _repo, _opts) do
-    nil
-  end
-
-  defp preload_if_needed(records, repo, opts) do
-    case opts[:preload] do
-      nil ->
-        records
-
-      models ->
-        repo.preload(records, models)
     end
   end
 
@@ -534,17 +481,6 @@ defmodule Canary.Plugs do
       apply_error_handler(conn, :not_found_handler, opts)
     else
       conn
-    end
-  end
-
-  defp apply_error_handler(conn, handler_key, opts) do
-    handler =
-      Keyword.get(opts, handler_key) ||
-        Application.get_env(:canary, handler_key)
-
-    case handler do
-      {mod, fun} -> apply(mod, fun, [conn])
-      nil -> conn
     end
   end
 end

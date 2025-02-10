@@ -1,108 +1,4 @@
-defmodule User do
-  defstruct id: 1
-end
-
-defmodule Post do
-  use Ecto.Schema
-
-  schema "posts" do
-    # :defaults not working so define own field with default value
-    belongs_to(:user, :integer, define_field: false)
-
-    field(:user_id, :integer, default: 1)
-    field(:slug, :string)
-  end
-end
-
-defmodule Repo do
-  def get(User, 1), do: %User{}
-  def get(User, _id), do: nil
-
-  def get(Post, 1), do: %Post{id: 1}
-  def get(Post, 2), do: %Post{id: 2, user_id: 2}
-  def get(Post, _), do: nil
-
-  def all(_), do: [%Post{id: 1}, %Post{id: 2, user_id: 2}]
-
-  def preload(%Post{id: 1}, :user), do: %Post{id: 1}
-  def preload(%Post{id: 2, user_id: 2}, :user), do: %Post{id: 2, user_id: 2, user: %User{id: 2}}
-
-  def preload([%Post{id: 1}, %Post{id: 2, user_id: 2}], :user),
-    do: [%Post{id: 1}, %Post{id: 2, user_id: 2, user: %User{id: 2}}]
-
-  def preload(resources, _), do: resources
-
-  def get_by(User, %{id: "1"}), do: %User{}
-  def get_by(User, _), do: nil
-
-  def get_by(Post, %{id: "1"}), do: %Post{id: 1}
-  def get_by(Post, %{id: "2"}), do: %Post{id: 2, user_id: 2}
-  def get_by(Post, %{id: _}), do: nil
-
-  def get_by(Post, %{slug: "slug1"}), do: %Post{id: 1, slug: "slug1"}
-  def get_by(Post, %{slug: "slug2"}), do: %Post{id: 2, slug: "slug2", user_id: 2}
-  def get_by(Post, %{slug: _}), do: nil
-end
-
-defimpl Canada.Can, for: User do
-  def can?(%User{}, action, Myproject.PartialAccessController)
-      when action in [:index, :show],
-      do: true
-
-  def can?(%User{}, action, Myproject.PartialAccessController)
-      when action in [:new, :create, :update, :delete],
-      do: false
-
-  def can?(%User{}, :index, Myproject.SampleController), do: true
-
-  def can?(%User{id: _user_id}, action, Myproject.SampleController)
-      when action in [:index, :show, :new, :create, :update, :delete],
-      do: true
-
-  def can?(%User{id: user_id}, action, %Post{user_id: user_id})
-      when action in [:index, :show, :new, :create],
-      do: true
-
-  def can?(%User{}, :index, Post), do: true
-
-  def can?(%User{}, action, Post)
-      when action in [:new, :create, :other_action],
-      do: true
-
-  def can?(%User{id: user_id}, action, %Post{user: %User{id: user_id}})
-      when action in [:edit, :update],
-      do: true
-
-  def can?(%User{}, _, _), do: false
-end
-
-defimpl Canada.Can, for: Atom do
-  def can?(nil, :create, Post), do: false
-  def can?(nil, :create, Myproject.SampleController), do: false
-end
-
-defmodule Helpers do
-  def unauthorized_handler(conn) do
-    conn
-    |> Map.put(:unauthorized_handler_called, true)
-    |> Plug.Conn.resp(403, "I'm sorry Dave. I'm afraid I can't do that.")
-    |> Plug.Conn.send_resp()
-  end
-
-  def not_found_handler(conn) do
-    conn
-    |> Map.put(:not_found_handler_called, true)
-    |> Plug.Conn.resp(404, "Resource not found.")
-    |> Plug.Conn.send_resp()
-  end
-
-  def non_halting_unauthorized_handler(conn) do
-    conn
-    |> Map.put(:unauthorized_handler_called, true)
-  end
-end
-
-defmodule PlugTest do
+defmodule Canary.PlugsTest do
   import Canary.Plugs
 
   import Plug.Adapters.Test.Conn, only: [conn: 4]
@@ -112,12 +8,13 @@ defmodule PlugTest do
   @moduletag timeout: 100_000_000
 
   Application.put_env(:canary, :repo, Repo)
+  Application.delete_env(:canary, :error_handler)
 
   test "it loads the resource correctly" do
     opts = [model: Post]
 
     # when the resource with the id can be fetched
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
     expected = %{conn | assigns: Map.put(conn.assigns, :post, %Post{id: 1})}
 
@@ -125,7 +22,7 @@ defmodule PlugTest do
 
     # when a resource of the desired type is already present in conn.assigns
     # it does not clobber the old resource
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -157,7 +54,7 @@ defmodule PlugTest do
 
     # when a resource of a different type is already present in conn.assigns
     # it replaces that resource with the desired resource
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -188,7 +85,7 @@ defmodule PlugTest do
     assert load_resource(conn, opts) == expected
 
     # when the resource with the id cannot be fetched
-    params = %{"id" => 3}
+    params = %{"id" => "3"}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/3", params)
     expected = Plug.Conn.assign(conn, :post, nil)
 
@@ -271,7 +168,7 @@ defmodule PlugTest do
   test "it calls the specified action when not_found with opts[:required] specified on :new action" do
     opts = [model: Post, not_found_handler: {Helpers, :not_found_handler}, required: true]
 
-    params = %{"id" => 3}
+    params = %{"id" => "3"}
 
     conn =
       conn(
@@ -289,7 +186,7 @@ defmodule PlugTest do
   test "it calls the specified action when not_found with opts[:required] specified on :create action" do
     opts = [model: Post, not_found_handler: {Helpers, :not_found_handler}, required: true]
 
-    params = %{"id" => 3}
+    params = %{"id" => "3"}
 
     conn =
       conn(
@@ -307,7 +204,7 @@ defmodule PlugTest do
   test "it calls the specified action when not_found with opts[:required] specified on :index action" do
     opts = [model: Post, not_found_handler: {Helpers, :not_found_handler}, required: true]
 
-    params = %{"id" => 3}
+    params = %{"id" => "3"}
 
     conn =
       conn(
@@ -380,7 +277,7 @@ defmodule PlugTest do
     assert authorize_resource(conn, opts) == expected
 
     # when the action is a phoenix action
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -399,7 +296,7 @@ defmodule PlugTest do
 
     # when the current user can access the given resource
     # and the action is specified in conn.assigns.canary_action
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -418,7 +315,7 @@ defmodule PlugTest do
 
     # when both conn.assigns.canary_action and conn.private.phoenix_action are defined
     # it uses conn.assigns.canary_action for authorization
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -436,7 +333,7 @@ defmodule PlugTest do
     assert authorize_resource(conn, opts) == expected
 
     # when the current user cannot access the given resource
-    params = %{"id" => 2}
+    params = %{"id" => "2"}
 
     conn =
       conn(
@@ -455,7 +352,7 @@ defmodule PlugTest do
 
     # when the resource of the desired type already exists in conn.assigns,
     # it authorizes for that resource
-    params = %{"id" => 2}
+    params = %{"id" => "2"}
 
     conn =
       conn(
@@ -474,7 +371,7 @@ defmodule PlugTest do
 
     # when the resource of a different type already exists in conn.assigns,
     # it authorizes for the desired resource
-    params = %{"id" => 2}
+    params = %{"id" => "2"}
 
     conn =
       conn(
@@ -492,7 +389,7 @@ defmodule PlugTest do
     assert authorize_resource(conn, opts) == expected
 
     # when current_user is nil
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -766,7 +663,7 @@ defmodule PlugTest do
 
     # when the current user can access the given resource
     # and the resource can be loaded
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -787,7 +684,7 @@ defmodule PlugTest do
     assert load_and_authorize_resource(conn, opts) == expected
 
     # when the current user cannot access the given resource
-    params = %{"id" => 2}
+    params = %{"id" => "2"}
 
     conn =
       conn(
@@ -809,7 +706,7 @@ defmodule PlugTest do
 
     # when a resource of the desired type is already present in conn.assigns
     # it does not load a new resource
-    params = %{"id" => 2}
+    params = %{"id" => "2"}
 
     conn =
       conn(
@@ -831,7 +728,7 @@ defmodule PlugTest do
 
     # when a resource of the a different type is already present in conn.assigns
     # it loads and authorizes for the desired resource
-    params = %{"id" => 2}
+    params = %{"id" => "2"}
 
     conn =
       conn(
@@ -852,7 +749,7 @@ defmodule PlugTest do
     assert load_and_authorize_resource(conn, opts) == expected
 
     # when the given resource cannot be loaded
-    params = %{"id" => 3}
+    params = %{"id" => "3"}
 
     conn =
       conn(
@@ -1060,7 +957,7 @@ defmodule PlugTest do
   test "it only loads the resource when the action is in opts[:only]" do
     # when the action is in opts[:only]
     opts = [model: Post, only: :show]
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1079,7 +976,7 @@ defmodule PlugTest do
 
     # when the action is not opts[:only]
     opts = [model: Post, only: :other]
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1100,7 +997,7 @@ defmodule PlugTest do
   test "it only authorizes actions in opts[:only]" do
     # when the action is in opts[:only]
     opts = [model: Post, only: :show]
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1118,7 +1015,7 @@ defmodule PlugTest do
 
     # when the action is not opts[:only]
     opts = [model: Post, only: :other]
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1139,7 +1036,7 @@ defmodule PlugTest do
   test "it only loads and authorizes the resource for actions in opts[:only]" do
     # when the action is in opts[:only]
     opts = [model: Post, only: :show]
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1161,7 +1058,7 @@ defmodule PlugTest do
 
     # when the action is not opts[:only]
     opts = [model: Post, only: :other]
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1179,10 +1076,10 @@ defmodule PlugTest do
     assert load_and_authorize_resource(conn, opts) == expected
   end
 
-  test "it skips the plug when both opts[:only] and opts[:except] are specified" do
+  test "it raises when both opts[:only] and opts[:except] are specified" do
     # when the plug is load_resource
     opts = [model: Post, only: :show, except: :index]
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1197,11 +1094,13 @@ defmodule PlugTest do
 
     expected = conn
 
-    assert load_resource(conn, opts) == expected
+    assert_raise ArgumentError, fn ->
+      load_resource(conn, opts) == expected
+    end
 
     # when the plug is authorize_resource
     opts = [model: Post, only: :show, except: :index]
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1216,11 +1115,14 @@ defmodule PlugTest do
 
     expected = conn
 
-    assert authorize_resource(conn, opts) == expected
+
+    assert_raise ArgumentError, fn ->
+      authorize_resource(conn, opts) == expected
+    end
 
     # when the plug is load_and_authorize_resource
     opts = [model: Post, only: :show, except: :index]
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1235,13 +1137,15 @@ defmodule PlugTest do
 
     expected = conn
 
-    assert load_and_authorize_resource(conn, opts) == expected
+    assert_raise ArgumentError, fn ->
+      load_and_authorize_resource(conn, opts) == expected
+    end
   end
 
   test "it correctly skips authorization for exempt actions" do
     # when the action is exempt
     opts = [model: Post, except: :show]
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1268,7 +1172,7 @@ defmodule PlugTest do
   test "it correctly skips loading resources for exempt actions" do
     # when the action is exempt
     opts = [model: Post, except: :show]
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1293,7 +1197,7 @@ defmodule PlugTest do
   test "it correctly skips load_and_authorize_resource for exempt actions" do
     # when the action is exempt
     opts = [model: Post, except: :show]
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1324,7 +1228,7 @@ defmodule PlugTest do
     opts = [model: Post, as: :some_key]
 
     # when the resource with the id can be fetched
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
     expected = Plug.Conn.assign(conn, :some_key, %Post{id: 1})
 
@@ -1359,7 +1263,7 @@ defmodule PlugTest do
 
     # when the current user can access the given resource
     # and the resource can be loaded
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1384,7 +1288,7 @@ defmodule PlugTest do
     opts = [model: Post]
 
     # when the resource with the id can be fetched
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
     conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
     expected = Plug.Conn.assign(conn, :post, %Post{id: 1})
 
@@ -1394,7 +1298,7 @@ defmodule PlugTest do
   test "when unauthorized, it calls the specified action" do
     opts = [model: Post, unauthorized_handler: {Helpers, :unauthorized_handler}]
 
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1415,7 +1319,7 @@ defmodule PlugTest do
   test "when not_found, it calls the specified action" do
     opts = [model: Post, not_found_handler: {Helpers, :not_found_handler}]
 
-    params = %{"id" => 3}
+    params = %{"id" => "3"}
 
     conn =
       conn(
@@ -1437,7 +1341,7 @@ defmodule PlugTest do
       unauthorized_handler: {Helpers, :unauthorized_handler}
     ]
 
-    params = %{"id" => 3}
+    params = %{"id" => "3"}
 
     conn =
       conn(
@@ -1463,7 +1367,7 @@ defmodule PlugTest do
       unauthorized_handler: {Helpers, :non_halting_unauthorized_handler}
     ]
 
-    params = %{"id" => 3}
+    params = %{"id" => "3"}
 
     conn =
       conn(
@@ -1490,7 +1394,7 @@ defmodule PlugTest do
       Application.put_env(:canary, :unauthorized_handler, {Helpers, :unauthorized_handler})
       opts = [model: Post]
 
-      params = %{"id" => 1}
+      params = %{"id" => "1"}
 
       conn =
         conn(
@@ -1512,7 +1416,7 @@ defmodule PlugTest do
       Application.put_env(:canary, :unauthorized_handler, {Helpers, :unauthorized_handler})
       opts = [model: Post]
 
-      params = %{"id" => 3}
+      params = %{"id" => "3"}
 
       conn =
         conn(
@@ -1540,7 +1444,7 @@ defmodule PlugTest do
       Application.put_env(:canary, :unauthorized_handler, {Helpers, :does_not_exist})
       opts = [model: Post, unauthorized_handler: {Helpers, :unauthorized_handler}]
 
-      params = %{"id" => 1}
+      params = %{"id" => "1"}
 
       conn =
         conn(
@@ -1566,7 +1470,7 @@ defmodule PlugTest do
       Application.put_env(:canary, :not_found_handler, {Helpers, :not_found_handler})
       opts = [model: Post]
 
-      params = %{"id" => 4}
+      params = %{"id" => "4"}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/4", params)
 
       expected =
@@ -1586,7 +1490,7 @@ defmodule PlugTest do
       Application.put_env(:canary, :not_found_handler, {Helpers, :does_not_exist})
       opts = [model: Post, not_found_handler: {Helpers, :not_found_handler}]
 
-      params = %{"id" => 4}
+      params = %{"id" => "4"}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/4", params)
 
       expected =
@@ -1609,7 +1513,7 @@ defmodule PlugTest do
         get_env: fn _, _, _ -> :current_admin end do
         # when the user configured with opts
         opts = [model: Post, except: :show]
-        params = %{"id" => 1}
+        params = %{"id" => "1"}
 
         conn =
           conn(
@@ -1631,7 +1535,7 @@ defmodule PlugTest do
     test "it uses the current_user name in options" do
       # when the user configured with opts
       opts = [model: Post, current_user: :user]
-      params = %{"id" => 1}
+      params = %{"id" => "1"}
 
       conn =
         conn(
@@ -1652,7 +1556,7 @@ defmodule PlugTest do
     test "it throws an error when the wrong current_user name is used" do
       # when the user configured with opts
       opts = [model: Post, current_user: :configured_current_user]
-      params = %{"id" => 1}
+      params = %{"id" => "1"}
 
       conn =
         conn(
@@ -1678,21 +1582,21 @@ defmodule PlugTest do
       opts = [model: Post, preload: :user]
 
       # when the resource with the id can be fetched and the association exists
-      params = %{"id" => 2}
+      params = %{"id" => "2"}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
       expected = Plug.Conn.assign(conn, :post, %Post{id: 2, user_id: 2, user: %User{id: 2}})
 
       assert load_resource(conn, opts) == expected
 
       # when the resource with the id can be fetched and the association does not exist
-      params = %{"id" => 1}
+      params = %{"id" => "1"}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/1", params)
-      expected = Plug.Conn.assign(conn, :post, %Post{id: 1, user_id: 1})
+      expected = Plug.Conn.assign(conn, :post, %Post{id: 1, user_id: 1, user: %User{id: 1}})
 
       assert load_resource(conn, opts) == expected
 
       # when the resource with the id cannot be fetched
-      params = %{"id" => 3}
+      params = %{"id" => "3"}
       conn = conn(%Plug.Conn{private: %{phoenix_action: :show}}, :get, "/posts/3", params)
       expected = Plug.Conn.assign(conn, :post, nil)
 
@@ -1722,7 +1626,7 @@ defmodule PlugTest do
       opts = [model: Post, preload: :user]
 
       # when the action is "edit"
-      params = %{"id" => 2}
+      params = %{"id" => "2"}
 
       conn =
         conn(
@@ -1763,7 +1667,7 @@ defmodule PlugTest do
 
       # when the current user can access the given resource
       # and the resource can be loaded and the association exists
-      params = %{"id" => 2}
+      params = %{"id" => "2"}
 
       conn =
         conn(
@@ -1781,11 +1685,11 @@ defmodule PlugTest do
         |> Plug.Conn.assign(:authorized, true)
         |> Plug.Conn.assign(:post, %Post{id: 2, user_id: 2, user: %User{id: 2}})
 
-      assert load_and_authorize_resource(conn, opts) == expected
+     assert load_and_authorize_resource(conn, opts) == expected
 
       # when the current user can access the given resource
       # and the resource can be loaded and the association does not exist
-      params = %{"id" => 1}
+      params = %{"id" => "1"}
 
       conn =
         conn(
@@ -1801,12 +1705,12 @@ defmodule PlugTest do
       expected =
         conn
         |> Plug.Conn.assign(:authorized, true)
-        |> Plug.Conn.assign(:post, %Post{id: 1, user_id: 1})
+        |> Plug.Conn.assign(:post, %Post{id: 1, user_id: 1, user: %User{id: 1}})
 
       assert load_and_authorize_resource(conn, opts) == expected
 
       # when the action is "edit"
-      params = %{"id" => 2}
+      params = %{"id" => "2"}
 
       conn =
         conn(
@@ -1834,7 +1738,7 @@ defmodule PlugTest do
     test "it throws an error when the non_id_actions is not a list" do
       # when opts[:non_id_actions] is set but not as a list
       opts = [model: Post, non_id_actions: :other_action]
-      params = %{"id" => 1}
+      params = %{"id" => "1"}
 
       conn =
         conn(
@@ -1856,7 +1760,7 @@ defmodule PlugTest do
       # when opts[:non_id_actions] is set as a list
       opts = [model: Post, non_id_actions: [:other_action]]
 
-      params = %{"id" => 1}
+      params = %{"id" => "1"}
 
       conn =
         conn(
@@ -1933,7 +1837,7 @@ defmodule PlugTest do
     assert authorize_controller(conn, opts) == expected
 
     # when the action is a phoenix action
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1952,7 +1856,7 @@ defmodule PlugTest do
 
     # when the current user can access the given resource
     # and the action and controller are specified in conn.assigns.canary_action
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1975,7 +1879,7 @@ defmodule PlugTest do
 
     # when both conn.assigns.canary_action and conn.private.phoenix_action are defined
     # it uses conn.assigns.canary_action for authorization
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -1993,7 +1897,7 @@ defmodule PlugTest do
     assert authorize_controller(conn, opts) == expected
 
     # when the current user cannot access the given action
-    params = %{"id" => 2}
+    params = %{"id" => "2"}
 
     conn =
       conn(
@@ -2011,7 +1915,7 @@ defmodule PlugTest do
     assert authorize_controller(conn, opts) == expected
 
     # when current_user is nil
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -2029,7 +1933,7 @@ defmodule PlugTest do
     assert authorize_controller(conn, opts) == expected
 
     # when an action is restricted on a controller
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
@@ -2047,7 +1951,7 @@ defmodule PlugTest do
     assert authorize_controller(conn, opts) == expected
 
     # when an action is authorized on a controller
-    params = %{"id" => 1}
+    params = %{"id" => "1"}
 
     conn =
       conn(
