@@ -9,6 +9,10 @@ Inspired by [CanCan](https://github.com/CanCanCommunity/cancancan) for Ruby on R
 
 [Read the docs](http://hexdocs.pm/canary)
 
+# Canary 2.0.0
+
+The `master` branch is for the development of Canary 2.0.0. Check out [branch 1.2.x](https://github.com/cpjk/canary/tree/1.2.x) if you are looking Canary 1 (only plug authentication).
+
 ## Installation
 
 For the latest master (2.0.0-dev):
