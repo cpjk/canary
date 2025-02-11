@@ -1,6 +1,6 @@
-Canary (Runhyve fork, actively maintained)
+Canary
 ======
-[![Actions Status](https://github.com/runhyve/canary/workflows/CI/badge.svg)](https://github.com/runhyve/canary/actions?query=workflow%3ACI)
+[![Actions Status](https://github.com/cpjk/canary/workflows/CI/badge.svg)](https://github.com/runhyve/canary/actions?query=workflow%3ACI)
 [![Hex pm](https://img.shields.io/hexpm/v/canary.svg?style=flat)](https://hex.pm/packages/canary)
 
 An authorization library in Elixir for Plug applications that restricts what resources
