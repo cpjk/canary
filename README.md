@@ -1,6 +1,6 @@
 Canary
 ======
-[![Build Status](https://travis-ci.org/cpjk/canary.svg?branch=master)](https://travis-ci.org/cpjk/canary)
+[![Actions Status](https://github.com/cpjk/canary/workflows/CI/badge.svg)](https://github.com/runhyve/canary/actions?query=workflow%3ACI)
 [![Hex pm](https://img.shields.io/hexpm/v/canary.svg?style=flat)](https://hex.pm/packages/canary)
 
 An authorization library in Elixir for Plug applications that restricts what resources
@@ -16,7 +16,7 @@ For the latest master:
 
 ```elixir
 defp deps do
-  {:canary, github: "cpjk/canary"}
+  {:canary, github: "runhyve/canary"}
 end
 ```
 
