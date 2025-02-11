@@ -16,7 +16,6 @@ defmodule Canary do
     plug :load_and_authorize_resource,
       model: Post,
       current_user: :current_user,
-      required: true,
       only: [:show, :edit, :update]
   end
   ```
@@ -34,7 +33,6 @@ defmodule Canary do
       on: [:handle_params, :handle_event],
       current_user: :current_user,
       model: Post,
-      required: true,
       only: [:show, :edit, :update]
 
   end

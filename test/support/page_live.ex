@@ -3,13 +3,14 @@ defmodule Canary.HooksHelper.PageLive do
   use Canary.Hooks
 
   mount_canary :load_resource,
-    model: Post
+    model: Post,
+    required: false
 
   mount_canary :load_and_authorize_resource,
     on: [:handle_params, :handle_event],
     model: User,
-    only: [:show]
-
+    only: [:show],
+    required: false
 
   def render(assigns) do
     ~H"""

@@ -1467,7 +1467,7 @@ defmodule Canary.PlugsTest do
     use ExUnit.Case, async: false
 
     test "when not_found, it calls the configured action" do
-      Application.put_env(:canary, :not_found_handler, {Helpers, :not_found_handler})
+      Application.put_env(:canary, :error_handler, Helpers)
       opts = [model: Post]
 
       params = %{"id" => "4"}

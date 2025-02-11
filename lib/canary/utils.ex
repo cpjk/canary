@@ -103,14 +103,15 @@ defmodule Canary.Utils do
   """
   @spec required?(Keyword.t()) :: boolean
   def required?(opts) do
-    !!Keyword.get(opts, :required, false)
+    !!Keyword.get(opts, :required, true)
   end
 
   @doc """
   Apply the error handler to the connection or socket
   """
-  @spec apply_error_handler(Plug.Conn.t() , atom, Keyword.t()) :: Plug.Conn.t()
-  @spec apply_error_handler(Phoenix.LiveView.Socket.t() , atom, Keyword.t()) :: {:halt, Phoenix.LiveView.Socket.t()}
+  @spec apply_error_handler(Plug.Conn.t(), atom, Keyword.t()) :: Plug.Conn.t()
+  @spec apply_error_handler(Phoenix.LiveView.Socket.t(), atom, Keyword.t()) ::
+          {:halt, Phoenix.LiveView.Socket.t()}
   def apply_error_handler(conn_or_socket, handler_key, opts) do
     get_handler(handler_key, opts)
     |> apply([conn_or_socket])
@@ -135,4 +136,92 @@ defmodule Canary.Utils do
     end
   end
 
+  @doc """
+  Get the resource name from the options, covert it to atom and pluralize
+  it if needed - only for :index action.
+
+  If the `:as` option is provided, it will be used as the resource name.
+
+        iex> Canary.Utils.get_resource_name(:show, model: MyApp.Post)
+        :post
+
+        iex> Canary.Utils.get_resource_name(:index, model: MyApp.Post)
+        :posts
+
+        iex> Canary.Utils.get_resource_name(:index, model: MyApp.Post, as: :my_posts)
+        :my_posts
+  """
+  def get_resource_name(action, opts) do
+    case opts[:as] do
+      nil ->
+        opts[:model]
+        |> Module.split()
+        |> List.last()
+        |> Macro.underscore()
+        |> pluralize_if_needed(action, opts)
+        |> String.to_atom()
+
+      as ->
+        as
+    end
+  end
+
+  def persisted?(opts) do
+    !!Keyword.get(opts, :persisted, false) || !!Keyword.get(opts, :required, false)
+  end
+
+  defp pluralize_if_needed(name, action, opts) do
+    if action in [:index] and not persisted?(opts) do
+      name <> "s"
+    else
+      name
+    end
+  end
+
+  @doc """
+  Returns the :non_id_actions option if it is present
+  """
+  def non_id_actions(opts) do
+    if opts[:non_id_actions] do
+      Enum.concat([:index, :new, :create], opts[:non_id_actions])
+    else
+      [:index, :new, :create]
+    end
+  end
+
+  @doc """
+  Check if the not_found handler should be applied for given action, assigns and options
+  """
+  @spec apply_handle_not_found?(action :: atom(), assigns :: map(), opts :: Keyword.t()) ::
+          boolean()
+  def apply_handle_not_found?(action, assigns, opts) do
+    non_id_actions = non_id_actions(opts)
+    is_required = required?(opts)
+
+    resource_name = Map.get(assigns, get_resource_name(action, opts))
+
+    if is_nil(resource_name) and (is_required or action not in non_id_actions) do
+      true
+    else
+      false
+    end
+  end
+
+  @doc false
+  def validate_opts(opts) do
+    opts
+    |> warn_deprecated_opts()
+  end
+
+  defp warn_deprecated_opts(opts) do
+    if Keyword.has_key?(opts, :persisted) do
+      IO.warn("The `:persisted` option is deprecated and will be removed in Canary 2.1.0. Use `:required` instead. Check the documentation for more information.")
+    end
+
+    if Keyword.has_key?(opts, :non_id_actions) do
+      IO.warn("The `:non_id_actions` option is deprecated and will be removed in Canary 2.1.0. Use separate :authorize_resource plug for non_id_actions and `:except` to exclude non_in_actions. Check the documentation for more information.")
+    end
+
+    opts
+  end
 end

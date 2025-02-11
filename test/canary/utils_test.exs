@@ -46,7 +46,7 @@ defmodule UtilsTest do
   test "required?/1 returns true if the resource is required" do
     assert required?(required: true) == true
     assert required?(required: false) == false
-    assert required?([]) == false
+    assert required?([]) == true
   end
 
   describe "apply_error_handler/3" do

@@ -8,8 +8,7 @@ defmodule Canary.HooksHelper.PostLive do
 
   mount_canary :load_resource,
     model: Post,
-    only: [:edit, :update],
-    required: true
+    only: [:edit, :update]
 
   def render(assigns) do
     ~H"""

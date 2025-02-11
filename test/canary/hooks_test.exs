@@ -28,7 +28,7 @@ defmodule Canary.HooksTest do
   describe "handle_hook/2" do
     test "load_resource hook on handle_params loads resource when is available" do
       uri = "http://localhost/post"
-      metadata = %{hook: :load_resource, stage: :handle_params, opts: [model: Post]}
+      metadata = %{hook: :load_resource, stage: :handle_params, opts: [model: Post, required: false]}
       params = %{}
 
       assert {:cont, socket} =
@@ -75,7 +75,7 @@ defmodule Canary.HooksTest do
       metadata = %{
         hook: :load_resource,
         stage: :handle_params,
-        opts: [model: Post, required: true]
+        opts: [model: Post]
       }
 
       assert {:halt, socket} =
@@ -88,7 +88,7 @@ defmodule Canary.HooksTest do
       metadata = %{
         hook: :load_resource,
         stage: :handle_event,
-        opts: [model: Post, required: true]
+        opts: [model: Post]
       }
 
       params = %{"id" => "1"}
@@ -108,7 +108,7 @@ defmodule Canary.HooksTest do
 
     test "authorize_resource hook on handle_params" do
       uri = "http://localhost/post"
-      metadata = %{hook: :authorize_resource, stage: :handle_params, opts: [model: Post]}
+      metadata = %{hook: :authorize_resource, stage: :handle_params, opts: [model: Post, required: false]}
       params = %{}
 
       socket =
@@ -168,7 +168,7 @@ defmodule Canary.HooksTest do
       metadata = %{
         hook: :load_and_authorize_resource,
         stage: :handle_params,
-        opts: [model: Post, required: true, preload: :user]
+        opts: [model: Post, preload: :user]
       }
 
       params = %{"id" => "1"}
@@ -200,7 +200,7 @@ defmodule Canary.HooksTest do
       metadata = %{
         hook: :load_and_authorize_resource,
         stage: :handle_event,
-        opts: [model: Post, required: true, preload: :user]
+        opts: [model: Post, preload: :user]
       }
 
       params = %{"id" => "1"}
@@ -258,7 +258,7 @@ defmodule Canary.HooksTest do
       assert socket.assigns.post == Repo.get(Post, 2)
 
       params = %{"id" => "1"}
-      assert {:cont, socket} =
+      assert {:halt, socket} =
                Canary.Hooks.handle_hook(metadata, [params, uri, build_socket()])
 
       assert socket.assigns.post == nil
@@ -336,9 +336,6 @@ defmodule Canary.HooksTest do
     test "it loads the resource correctly", %{conn: conn} do
       {:ok, lv, _html} = live(conn, "/post/1")
       assert %{post: %Post{id: 1}} = PostLive.fetch_assigns(lv)
-
-      {:ok, lv, _html} = live(conn, "/post/13")
-      assert %{post: nil} = PostLive.fetch_assigns(lv)
     end
 
     test "it halt the socket when the resource is required", %{conn: conn} do

@@ -6,17 +6,17 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
     If you want to authorize `handle_params` and `handle_event` LiveView callbacks
     you can use `mount_canary` macro to attach the hooks.
 
+    You can think about the `mount_canary` as something similar to `plug` but for LiveView events.
+
     For `handle_params` it uses `socket.assigns.live_action` as `:action`.
     For `handle_event` it uses the event name as `:action`.
 
     > Note that the `event_name` is a string - but in Canary it's converted to an atom for consistency.
 
-    The main difference beteween `Canary.Hooks` and `Canary.Plugs` is that
-    in `Canary.Hooks` there is no `:non_id_actions` option. It won't load all resources
-    like it's done with plugs, but you can still use `:authorize_resource`.
+    `Canary.Hooks` and `Canary.Plugs` are separate modules but they share the same API.
+    You can define plugs for standard pages and hooks for LiveView events with the same opts.
 
-
-    For the authorization actions, when the `:required` is not set (by default it's false) it might be nil.
+    For the authorization actions, when the `:required` is false (by default it's true) it might be nil.
     Then the `Canada.Can` implementation should be the module name of the model rather than a struct.
 
     ## Example
@@ -26,13 +26,13 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
       mount_canary :load_and_authorize_resource,
         on: [:handle_params, :handle_event],
         model: Post,
-        required: true,
         only: [:show, :edit, :update]
 
       mount_canary :authorize_resource,
         on: [:handle_event],
         model: Post,
-        only: [:my_event]
+        only: [:my_event],
+        required: false
 
       # ...
 
@@ -157,7 +157,6 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
       ```
       mount_canary :load_and_authorize_resource,
         model: Post,
-        required: true,
         only: [:edit: :update]
       ```
     """
@@ -296,7 +295,6 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
       as: :custom_name,
       except: [:new, :create],
       preload: [:comments],
-      required: true,
       not_found_handler: {ErrorHandler, :not_found_handler}
 
     ```
@@ -333,7 +331,7 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
     * `:preload` - Specifies association(s) to preload
     * `:id_name` - Specifies the name of the id in `params`, defaults to "id"
     * `:id_field` - Specifies the name of the ID field in the database for searching :id_name value, defaults to "id".
-    * `:required` - Specifies if the resource is required, when it's not found it will halt the socket
+    * `:required` - Specifies if the resource is required, when it's not found it will halt the socket, default true
     * `:not_found_handler` - Specify a handler function to be called if the resource is not found
     * `:unauthorized_handler` - Specify a handler function to be called if the action is unauthorized
 
@@ -345,7 +343,6 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
       model: Comments,
       id_name: :post_id,
       id_field: :post_id,
-      required: true,
       only: [:comments]
 
     mount_canary :load_and_authorize_resource,
@@ -353,7 +350,6 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
       as: :custom_name,
       except: [:new, :create],
       preload: [:comments],
-      required: true,
       error_handler: CustomErrorHandler
     ```
 
@@ -376,7 +372,8 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
 
     defp do_load_resource(action, socket, params, opts) do
       if action_valid?(action, opts) do
-        load_resource(socket, params, opts)
+        assign(socket, :canary_action, action)
+        |> load_resource(params, opts)
         |> verify_resource(opts)
       else
         {:cont, socket}
@@ -385,7 +382,8 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
 
     defp do_load_and_authorize_resource(action, params, socket, opts) do
       if action_valid?(action, opts) do
-        load_resource(socket, params, opts)
+        assign(socket, :canary_action, action)
+        |> load_resource(params, opts)
         |> check_authorization(action, opts)
         |> verify_authorized_resource(opts)
       else
@@ -395,7 +393,8 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
 
     defp do_authorize_resource(action, socket, opts) do
       if action_valid?(action, opts) do
-        check_authorization(socket, action, opts)
+        assign(socket, :canary_action, action)
+        |> check_authorization(action, opts)
         |> verify_authorized_resource(opts)
       else
         {:cont, socket}
@@ -414,12 +413,14 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
             repo_get_resource(params, opts)
         end
 
-      assign(socket, get_resource_name(opts), resource)
+      action = socket.assigns.canary_action
+      assign(socket, get_resource_name(action, opts), resource)
     end
 
     # Fetch the resource from the socket assigns or nil
     defp fetch_resource(%Socket{} = socket, opts) do
-      case Map.get(socket.assigns, get_resource_name(opts), nil) do
+      action = socket.assigns.canary_action
+      case Map.get(socket.assigns, get_resource_name(action, opts), nil) do
         resource when is_struct(resource) ->
           if resource.__struct__ == opts[:model] do
             {:ok, resource}
@@ -498,21 +499,7 @@ if Code.ensure_loaded?(Phoenix.LiveView) do
       end
     end
 
-    defp get_resource_name(opts) do
-      case opts[:as] do
-        nil ->
-          opts[:model]
-          |> Module.split()
-          |> List.last()
-          |> Macro.underscore()
-          |> String.to_atom()
-
-        as ->
-          as
-      end
-    end
-
-    defp get_stages(opts) do
+     defp get_stages(opts) do
       Keyword.get(opts, :on, :handle_params)
       |> validate_stages()
     end
