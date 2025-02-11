@@ -4,7 +4,7 @@ defmodule Canary.Mixfile do
   def project do
     [
       app: :canary,
-      version: "1.1.1",
+      version: "1.1.2",
       elixir: "~> 1.2",
       package: package(),
       description: """

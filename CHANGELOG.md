@@ -1,5 +1,9 @@
 ## Changelog
 
+## v1.2.0
+  * Enhancements
+    * Add `required` opt
+
 ## v1.1.0
   * Enhancements
     * Add `non_id_actions` opt
