@@ -76,7 +76,7 @@ config :canary,
 Sometimes there is need to perform authorization for different subject. You can override the `:current_user` with options passed to plug or hook.
 
 <!-- tabs-open -->
-### Coon Plugs
+### Conn Plugs
 ```elixir
 import Canary.Plugs
 
@@ -137,17 +137,22 @@ Canary Plugs and Hooks uses the same configuration options.
 | Name      | Description |  Example |
 | ----------- | ----------- | ----------- |
 | `:model`      | Model module name used in your app  **Required**     | `Post` |
-| `:only` | Specifies which actions to authorize | `[:show, :edit, :update]` |
-| `:except` |  Specifies which actions for which to skip authorization | `[:delete]` |
+| `:only` | Specifies for which actions plug/hook is enabled | `[:show, :edit, :update]` |
+| `:except` |  Specifies for which actions plug/hook is disabled  | `[:delete]` |
 | `:current_user`   | Key name to fetch from the assigns. It will be used as `subject` for `Canada.Can` to evaluate permissions. Default set to `:current_user`. Applies only for `authorize_resource` or `load_and_authorize_resource`       | `:current_member` |
 | `:on` | Specifies the LiveView lifecycle stages to attach the hook. Default `:handle_params` **Available only in Canary.Hooks** | `[:handle_params, :handle_event]` |
 | `:as` | Specifies the resource_name key in assigns | `:team_post` |
-| `:id_name` | Specifies the name of the id in params, defaults to "id" | `:post_id` |
-| `:id_field` | Specifies the name of the ID field in the database for searching :id_name value, defaults to "id". | `:post_id` |
-| `:required` | Specifies if the resource is required, when it's not found it will handle not found error, default to false | true |
-| `:persisted` | Specifies the resource should always be loaded from the database, defaults to false **Available only in Canary.Plugs** | true |
+| `:id_name` | Specifies the name of the id in params, *defaults to "id"* | `:post_id` |
+| `:id_field` | Specifies the name of the ID field in the database for searching :id_name value, *defaults to "id"*. | `:post_id` |
+| `:required` | Specifies if the resource is required, when it's not found it will handle not found error, *defaults to true* | false |
 | `:not_found_handler` | `{mod, fun}` tuple, it overrides the default error handler for not found error  | `{YourApp.ErrorHandler, :custom_handle_not_found}` |
-| `:unauthorized_handler` | `{mod, fun}` tuple, it overrides the default error handler for not found error  | `{YourApp.ErrorHandler, :custom_handle_unauthorized}` |
+| `:unauthorized_handler` | `{mod, fun}` tuple, it overrides the default error handler for unauthorized error  | `{YourApp.ErrorHandler, :custom_handle_unauthorized}` |
+
+### Deprecated options
+| Name      | Description |  Example |
+| ----------- | ----------- | ----------- |
+| `:non_id_actions` | Additional actions for which Canary will authorize based on the model name | `[:index, :new, :create]` |
+| `:persisted` | Specifies the resource should always be loaded from the database, defaults to false **Available only in Canary.Plugs** | true |
 
 ### Examples
 
@@ -155,7 +160,6 @@ Canary Plugs and Hooks uses the same configuration options.
   plug :load_and_authorize_resource,
     current_user: :current_member,
     model: Machine,
-    non_id_actions: [:index, :create, :new],
     preload: [:plan, :networks, :distribution, :job, ipv4: [:ip_pool], hypervisor: :region]
 
   plug :load_resource,
@@ -163,11 +167,9 @@ Canary Plugs and Hooks uses the same configuration options.
     id_name: "hypervisor_id",
     only: [:new, :create],
     preload: [:region, :hypervisor_type, machines: [:networks, :plan, :distribution]],
-    required: true
 
   plug :load_and_authorize_resource,
     model: Hypervisor,
-    non_id_actions: [:index, :create, :new],
     preload: [
       :region,
       :hypervisor_type,
@@ -179,19 +181,19 @@ Canary Plugs and Hooks uses the same configuration options.
     on: [:handle_params, :handle_event],
     current_user: :current_member,
     model: Machine,
-    only: [:index, :new]
+    only: [:index, :new],
+    required: false
 
   mount_canary :load_and_authorize_resource,
     on: [:handle_event],
     current_user: :current_member,
     model: Machine,
-    required: true,
     only: [:start, :stop, :restart, :poweroff]
 ```
 
 ## Plug and Hooks
 
-`Canary.Plugs` and `Canary.Hooks` should work the same way in most cases - except form loading all resources for non-id actions.
+`Canary.Plugs` and `Canary.Hooks` should work the same way in most cases.
 
 
 ### Authorize resource
@@ -242,20 +244,36 @@ It combines two other functions - `load_resource` and `authorize_resource`.
 
 ## Non-id actions
 
-For the non-id actions where there is no resource to be loaded please use `:authorize_resource` and limit other functions `:load_resource` or `:load_and_authorize_resource` to skip those actions. By default `:required` option is set to false, so when resouce cannot be get from repo the model module name will be used as resource for the call to `Canada.can?`.
+For the non-id actions where there is no resource to be loaded please use `:authorize_resource` and limit other functions `:load_resource` or `:load_and_authorize_resource` to skip those actions. By default `:required` option is set to true, so when resouce cannot be get from repo the model the `not_found_handler` will be called. Changing `:required` to false will allow to set resource as nil, and then module name will be used as resource for the call to `Canada.can?`.
 
 ```elixir
 plug :authorize_resource,
   model: Post,
-  only: [:index, :new, :create]
+  only: [:index, :new, :create],
+  required: false
+
+plug :load_and_authorize_resource,
+  model: Post,
+  except: [:index, :create, :new]
 ```
 
-In terms of loading resources for the `:index` which should get all reources from the db. Currently it's supported only in the plug based functions.
-By default, when the action is `:index`, all records from the specified model will be loaded. This can be overridden to fetch a single record from the database by using the `:persisted` key.
+To load all resources on `:index` aciton you can setup plug, or add the load function directly in `index/2`
 
-> ### Upcoming change {: .info}
->
-> This should be considered as deprecated. The new option for loading all resources will be provided.
+```elixir
+  # with plug
+
+  plug :load_all_resources when action in [:index]
+  defp load_all_resources(conn, _opts) do
+    assign(:posts, Posts.list_posts())
+  end
+
+  # or directly in the controller action
+
+  def index(conn, _params) do
+    posts = Posts.list_posts()
+    render(conn, "index.html", posts: posts)
+  end
+```
 
 ## Nested resources
 
@@ -270,13 +288,13 @@ For example, when loading and authorizing a `Post` resource which can have one o
 plug :load_and_authorize_resource,
   model: Post,
   id_name: "post_id",
-  required: true,
   only: [:create_comment]
 
 # child
 plug :authorize_resouce,
   model: Comment,
-  only: [:create_comment, :save_comment]
+  only: [:create_comment, :save_comment],
+  required: false
 ```
 
 to load and authorize the parent `Post` resource using the `post_id` in `/posts/:post_id/comments` before you create the `Comment` resource using its parent.

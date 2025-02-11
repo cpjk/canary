@@ -6,9 +6,9 @@
 
 > Since 2.0.0 the `:persisted` and `:non_id_actions` options are deprecated and will be removed in Canary 2.1.0.
 
-You need to update plug calls. Using `:authorize_resource` for actions where ther is no actuall load action is more explicit.
+You need to update plug calls. Using `:authorize_resource` for actions where there is no actual load action is more explicit.
 
-Let's assume you have now following plug calls:
+Let's assume you have now following plug call:
 ```elixir
   plug :load_and_authorize_resource,
     model: Network,
