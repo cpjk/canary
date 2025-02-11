@@ -23,6 +23,7 @@ defmodule Canary.Mixfile do
           "docs/getting-started.md",
           "README.md",
           "CHANGELOG.md",
+          "docs/upgrade.md",
         ],
         groups_for_modules: [
           "Error Handler": [Canary.ErrorHandler, Canary.DefaultHandler],
