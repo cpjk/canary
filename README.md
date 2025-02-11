@@ -16,7 +16,7 @@ For the latest master:
 
 ```elixir
 defp deps do
-  {:canary, github: "runhyve/canary"}
+  {:canary, github: "cpjk/canary"}
 end
 ```
 
@@ -24,7 +24,7 @@ For the latest release:
 
 ```elixir
 defp deps do
-  {:canary, "~> 1.1.1"}
+  {:canary, "~> 1.2.1"}
 end
 ```
 
