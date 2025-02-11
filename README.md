@@ -3,9 +3,6 @@ Canary
 [![Actions Status](https://github.com/cpjk/canary/workflows/CI/badge.svg)](https://github.com/runhyve/canary/actions?query=workflow%3ACI)
 [![Hex pm](https://img.shields.io/hexpm/v/canary.svg?style=flat)](https://hex.pm/packages/canary)
 
-(Runhyve fork, actively maintained)
-
-
 An authorization library in Elixir for `Plug` and `Phoenix.LiveView` applications that restricts what resources the current user is allowed to access, and automatically load and assigns resources.
 
 Inspired by [CanCan](https://github.com/CanCanCommunity/cancancan) for Ruby on Rails.
@@ -14,7 +11,7 @@ Inspired by [CanCan](https://github.com/CanCanCommunity/cancancan) for Ruby on R
 
 ## Installation
 
-For the latest master:
+For the latest master (2.0.0-dev):
 
 ```elixir
 defp deps do
@@ -36,9 +33,11 @@ Then run `mix deps.get` to fetch the dependencies.
 
 Canary provides functions to be used as plugs or LiveView hooks to load and authorize resources:
 
-`load_resource`, `authorize_resource`, `authorize_controller`, and `load_and_authorize_resource`.
+`load_resource`, `authorize_resource`, `authorize_controller`*, and `load_and_authorize_resource`.
 
 `load_resource` and `authorize_resource` can be used by themselves, while `load_and_authorize_resource` combines them both.
+
+*Available only in plug based authentication*
 
 In order to use Canary, you will need, at minimum:
 
@@ -256,12 +255,17 @@ mount_canary :load_and_authorize_resource, model: Post, preload: :comments
 
 ### Non-id actions
 
-For the `:index`, `:new`, and `:create` actions, the resource passed to the `Canada.Can` implementation
-should be the *module* name of the model rather than a struct.
+To authorize actions where there is no loaded resource, the resource passed to the `Canada.Can` implementation should be the module name of the model rather than a struct.
 
-For example, when authorizing access to the `Post` resource,
+To authorize such actions use `authorize_resource` plug with `required: false` option
 
-you should use
+```elixir
+plug :authorize_resource, model: Post, only: [:index, :new, :create], required: false
+
+mount_canary :authorize_resource, model: Post, only: [:index, :new, :create], required: false
+```
+
+For example, when authorizing access to the `Post` resource, you should use
 
 ```elixir
 def can?(%User{}, :index, Post), do: true
@@ -273,35 +277,50 @@ instead of
 def can?(%User{}, :index, %Post{}), do: true
 ```
 
-You can specify additional actions for which Canary will authorize based on the model name, by passing the `non_id_actions` opt to the plug.
-
-For example,
-```elixir
-plug :authorize_resource, model: Post, non_id_actions: [:find_by_name]
-```
+> ### Deprecated {: .warning}
+>
+> The `:non_id_actions` is deprecated as of 2.0.0-dev and will be removed in Canary 2.1.0
+> Please follow the [Upgrade guide to 2.0.0](docs/upgrade.md#upgrading-from-canary-1-2-0-to-2-0-0) for more details.
 
 ### Nested associations
 
-> ### Info {: .info}
->
-> The `:persisted` is deprecated as of 2.0.0-dev
-> Please use `:required` instead, check the [Getting started - Nested associations](docs/getting-started.md#nested-resources) for more details.
-
-Sometimes you need to load and authorize a parent resource when you have a relationship between two resources and you are
-creating a new one or listing all the children of that parent.  By specifying the `:persisted` option with `true`
-you can load and/or authorize a nested resource.  Specifying this option overrides the default loading behavior of the
-`:index`, `:new`, and `:create` actions by loading an individual resource.  It also overrides the default
-authorization behavior of the `:index`, `:new`, and `create` actions by loading a struct instead of a module
-name for the call to `Canada.can?`.
-
-For example, when loading and authorizing a `Post` resource which can have one or more `Comment` resources, use
+Sometimes you need to load and authorize a parent resource when you have
+a relationship between two resources and you are creating a new one or
+listing all the children of that parent. Depending on your authorization
+model you migth authorize against the parent resource or against the child.
 
 ```elixir
-plug :load_and_authorize_resource, model: Post, id_name: "post_id", persisted: true, only: [:create]
+defmodule MyAppWeb.CommentController do
+
+  plug :load_and_authorize_resource,
+    model: Post,
+    id_name: "post_id",
+    only: [:new_comment, :create_comment]
+
+  # get /posts/:post_id/comments/new
+  def new_comment(conn, _params) do
+    # ...
+  end
+
+  # post /posts/:post_id/comments
+  def new_comment(conn, _params) do
+    # ...
+  end
+end
 ```
 
-to load and authorize the parent `Post` resource using the `post_id` in /posts/:post_id/comments before you
-create the `Comment` resource using its parent.
+It will authorize using `Canada.Can` with following arguments:
+1. subject is `conn.assigns.current_user`
+2. action is `:new_comment` or `:create_comment`
+3. resource is `%Post{}` with `conn.params["post_id"]`
+
+Thanks to the `:requried` set to true by default this plug will call `not_found_handler` if the `Post` with given `post_id` does not exists.
+If for some reason you want to disable it, set `required: false` in opts.
+
+> ### Deprecated {: .warning}
+>
+> The `:persisted` is deprecated as of 2.0.0-dev and will be removed in Canary 2.1.0
+> Please follow the [Upgrade guide to 2.0.0](docs/upgrade.md#upgrading-from-canary-1-2-0-to-2-0-0) for more details.
 
 ### Implementing Canada.Can for an anonymous user
 
