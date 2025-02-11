@@ -1,5 +1,20 @@
 ## Changelog
 
+## v2.0.0-dev
+  Canary 2.0.0 introduces authorization hooks for Phoenix LiveView. The Plug based authorization was refactored a bit to make the API cosistent. Please follow the [Upgrade guide to 2.0.0](docs/upgrade.md#upgrading-from-canary-1-2-0-to-2-0-0) for more details.
+
+  * Enhancements
+    * added support for authorization LiveView with `Canary.Hooks`
+    * added `:error_handler` and ErrorHandler behaviour
+    * added `:required` option, default to true
+
+  * Dependency changes
+    * Elixir ~> 1.14 is now required
+
+  * Deprecations
+    * The `:non_id_actions` option is deprecated and will be removed in Canary 2.1.0. Use separate `:authorize_resource` plug for `non_id_actions` and `:except` to exclude non_in_actions.
+    * The `:persisted` option is deprecated and will be removed in Canary 2.1.0. Use `:required` instead.
+
 ## v1.2.0
   * Enhancements
     * Add `required` opt

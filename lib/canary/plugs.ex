@@ -1,14 +1,14 @@
 defmodule Canary.Plugs do
+  import Canary.Utils
   import Canada.Can, only: [can?: 3]
   import Ecto.Query
-  import Keyword, only: [has_key?: 2]
 
   @moduledoc """
   Plug functions for loading and authorizing resources for the current request.
 
   The plugs all store data in conn.assigns (in Phoenix applications, keys in conn.assigns can be accessed with `@key_name` in templates)
 
-  In order to use the plug functions, you must `use Canary`.
+  In order to use the plug functions, you must `import Canary.Plugs`.
 
   You must also specify the Ecto repo to use in your configuration:
   ```
@@ -19,14 +19,13 @@ defmodule Canary.Plugs do
   config :canary, current_user: :some_current_user
   ```
 
-  You can specify a handler function (in this case, `Helpers.handle_unauthorized`) to be called when an action is unauthorized like so:
+  You can specify a error handler module (in this case, `Helpers`) to be called when an action is unauthorized like so:
   ```elixir
-  config :canary, unauthorized_handler: {Helpers, :handle_unauthorized}
+  config :canary, error_handler: Helpers
   ```
-  or to handle when a resource is not found:
-  ```elixir
-  config :canary, not_found_handler: {Helpers, :handle_not_found}
-  ```
+
+  Module should implement the `Canary.ErrorHandler` behaviour.
+
   Canary will pass the `conn` to the handler function.
   """
 
@@ -69,8 +68,9 @@ defmodule Canary.Plugs do
   * `:id_name` - Specifies the name of the id in `conn.params`, defaults to "id"
   * `:id_field` - Specifies the name of the ID field in the database for searching :id_name value, defaults to "id".
   * `:persisted` - Specifies the resource should always be loaded from the database, defaults to false
-  * `:not_found_handler` - Specify a handler function to be called if the resource is not found
   * `:required` - Same as `:persisted` but with not found handler - even for :index, :new or :create action
+  * `:not_found_handler` - Specify a handler function to be called if the resource is not found
+
 
   Examples:
   ```
@@ -87,8 +87,12 @@ defmodule Canary.Plugs do
   plug :load_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
   ```
   """
+  @spec load_resource(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
   def load_resource(conn, opts) do
-    if action_valid?(conn, opts) do
+    action = get_action(conn)
+    validate_opts(opts)
+
+    if action_valid?(action, opts) do
       conn
       |> do_load_resource(opts)
       |> handle_not_found(opts)
@@ -100,6 +104,7 @@ defmodule Canary.Plugs do
   defp do_load_resource(conn, opts) do
     action = get_action(conn)
     is_persisted = persisted?(opts)
+    validate_opts(opts)
 
     loaded_resource =
       cond do
@@ -116,7 +121,7 @@ defmodule Canary.Plugs do
           fetch_resource(conn, opts)
       end
 
-    Plug.Conn.assign(conn, get_resource_name(conn, opts), loaded_resource)
+    Plug.Conn.assign(conn, get_resource_name(action, opts), loaded_resource)
   end
 
   @doc """
@@ -156,8 +161,12 @@ defmodule Canary.Plugs do
   plug :authorize_controller, except: [:destroy]
   ```
   """
+  @spec authorize_controller(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
   def authorize_controller(conn, opts) do
-    if action_valid?(conn, opts) do
+    action = get_action(conn)
+    validate_opts(opts)
+
+    if action_valid?(action, opts) do
       do_authorize_controller(conn, opts) |> handle_unauthorized(opts)
     else
       conn
@@ -250,8 +259,11 @@ defmodule Canary.Plugs do
   plug :load_resource, model: Post, id_name: "slug", id_field: "slug", only: [:show], persisted: true
   ```
   """
+  @spec authorize_resource(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
   def authorize_resource(conn, opts) do
-    if action_valid?(conn, opts) do
+    action = get_action(conn)
+
+    if action_valid?(action, opts) do
       do_authorize_resource(conn, opts) |> handle_unauthorized(opts)
     else
       conn
@@ -333,7 +345,9 @@ defmodule Canary.Plugs do
   ```
   """
   def load_and_authorize_resource(conn, opts) do
-    if action_valid?(conn, opts) do
+    action = get_action(conn)
+
+    if action_valid?(action, opts) do
       do_load_and_authorize_resource(conn, opts)
     else
       conn
@@ -342,11 +356,7 @@ defmodule Canary.Plugs do
 
   defp do_load_and_authorize_resource(conn, opts) do
     conn
-    # skip not_found_handler so auth handler can catch first if needed
-    |> Map.put(:skip_canary_handler, true)
-    |> load_resource(opts)
-    # allow auth handling
-    |> Map.delete(:skip_canary_handler)
+    |> do_load_resource(opts)
     |> authorize_resource(opts)
     |> maybe_handle_not_found(opts)
     |> purge_resource_if_unauthorized(opts)
@@ -359,17 +369,19 @@ defmodule Canary.Plugs do
   defp purge_resource_if_unauthorized(%{assigns: %{authorized: true}} = conn, _opts),
     do: conn
 
-  defp purge_resource_if_unauthorized(%{assigns: %{authorized: false}} = conn, opts),
-    do: Plug.Conn.assign(conn, get_resource_name(conn, opts), nil)
+  defp purge_resource_if_unauthorized(%{assigns: %{authorized: false}} = conn, opts) do
+    action = get_action(conn)
+    Plug.Conn.assign(conn, get_resource_name(action, opts), nil)
+  end
 
   defp fetch_resource(conn, opts) do
     repo = Application.get_env(:canary, :repo)
-
+    action = get_action(conn)
     field_name = Keyword.get(opts, :id_field, "id")
 
     get_map_args = %{String.to_atom(field_name) => get_resource_id(conn, opts)}
 
-    case Map.fetch(conn.assigns, get_resource_name(conn, opts)) do
+    case Map.fetch(conn.assigns, get_resource_name(action, opts)) do
       :error ->
         repo.get_by(opts[:model], get_map_args)
         |> preload_if_needed(repo, opts)
@@ -392,8 +404,8 @@ defmodule Canary.Plugs do
 
   defp fetch_all(conn, opts) do
     repo = Application.get_env(:canary, :repo)
-
-    resource_name = get_resource_name(conn, opts)
+    action = get_action(conn)
+    resource_name = get_resource_name(action, opts)
 
     # check if a resource is already loaded at the key
     case Map.fetch(conn.assigns, resource_name) do
@@ -409,101 +421,10 @@ defmodule Canary.Plugs do
     end
   end
 
-  defp get_resource_id(conn, opts) do
-    case opts[:id_name] do
-      nil ->
-        conn.params["id"]
-
-      id_name ->
-        conn.params[id_name]
-    end
-  end
-
   defp get_action(conn) do
     case Map.fetch(conn.assigns, :canary_action) do
       {:ok, action} -> action
       _ -> conn.private.phoenix_action
-    end
-  end
-
-  defp action_exempt?(conn, opts) do
-    action = get_action(conn)
-
-    if is_list(opts[:except]) && action in opts[:except] do
-      true
-    else
-      action == opts[:except]
-    end
-  end
-
-  defp action_included?(conn, opts) do
-    action = get_action(conn)
-
-    if is_list(opts[:only]) && action in opts[:only] do
-      true
-    else
-      action == opts[:only]
-    end
-  end
-
-  defp action_valid?(conn, opts) do
-    cond do
-      has_key?(opts, :except) && has_key?(opts, :only) ->
-        false
-
-      has_key?(opts, :except) ->
-        !action_exempt?(conn, opts)
-
-      has_key?(opts, :only) ->
-        action_included?(conn, opts)
-
-      true ->
-        true
-    end
-  end
-
-  defp persisted?(opts) do
-    !!Keyword.get(opts, :persisted, false) || !!Keyword.get(opts, :required, false)
-  end
-
-  defp required?(opts) do
-    !!Keyword.get(opts, :required, false)
-  end
-
-  defp get_resource_name(conn, opts) do
-    case opts[:as] do
-      nil ->
-        opts[:model]
-        |> Module.split()
-        |> List.last()
-        |> Macro.underscore()
-        |> pluralize_if_needed(conn, opts)
-        |> String.to_atom()
-
-      as ->
-        as
-    end
-  end
-
-  defp pluralize_if_needed(name, conn, opts) do
-    if get_action(conn) in [:index] and not persisted?(opts) do
-      name <> "s"
-    else
-      name
-    end
-  end
-
-  defp preload_if_needed(nil, _repo, _opts) do
-    nil
-  end
-
-  defp preload_if_needed(records, repo, opts) do
-    case opts[:preload] do
-      nil ->
-        records
-
-      models ->
-        repo.preload(records, models)
     end
   end
 
@@ -513,38 +434,13 @@ defmodule Canary.Plugs do
   defp handle_unauthorized(%{assigns: %{authorized: false}} = conn, opts),
     do: apply_error_handler(conn, :unauthorized_handler, opts)
 
-  defp handle_not_found(%{skip_canary_handler: true} = conn, _opts) do
-    conn
-  end
-
   defp handle_not_found(conn, opts) do
     action = get_action(conn)
 
-    non_id_actions =
-      if opts[:non_id_actions] do
-        Enum.concat([:index, :new, :create], opts[:non_id_actions])
-      else
-        [:index, :new, :create]
-      end
-
-    is_required = required?(opts)
-    resource_name = Map.get(conn.assigns, get_resource_name(conn, opts))
-
-    if is_nil(resource_name) and (is_required or action not in non_id_actions) do
+    if apply_handle_not_found?(action, conn.assigns, opts) do
       apply_error_handler(conn, :not_found_handler, opts)
     else
       conn
-    end
-  end
-
-  defp apply_error_handler(conn, handler_key, opts) do
-    handler =
-      Keyword.get(opts, handler_key) ||
-        Application.get_env(:canary, handler_key)
-
-    case handler do
-      {mod, fun} -> apply(mod, fun, [conn])
-      nil -> conn
     end
   end
 end

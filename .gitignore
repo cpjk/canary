@@ -4,4 +4,7 @@ erl_crash.dump
 *.ez
 tags
 /doc
+/cover
 *.beam
+.history
+.tool-version
