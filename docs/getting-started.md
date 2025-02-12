@@ -1,69 +1,91 @@
-# Getting started
+# Getting Started
 
-This guide is an introduction to Canary, an authorization library in Elixir for `Plug` and `Phoenix.LiveView` applications that restricts what resources the current user is allowed to access, and automatically load and assigns resources.
+This guide introduces **Canary**, an authorization library for **Elixir** applications using `Plug` and `Phoenix.LiveView`. It restricts resource access based on user permissions and automatically loads and assigns resources.
 
-Canary provides three main functions to be used as *plugs* or *LiveView hooks* to load and authorize resource: `load_resource`, `authorize_resource` and `load_and_authorize_resource`
+Canary provides three primary functions to be used as *plugs* or *LiveView hooks* to manage resources:
+
+- `load_resource`
+- `authorize_resource`
+- `load_and_authorize_resource`
 
 ## Glossary
 
 ### Subject
-It is the key name to fetch from the `assigns`. It will be used as `subject` for `Canada.Can` to evaluate permissions. By default it's set to `:current_user`.
 
-It can be defined in module config with `config :canary, current_user: :user`
-This option can be overridden with `:current_user` for each plug / mouted hook.
+The key name used to fetch the subject from `assigns`. This subject is passed to `Canada.Can` to evaluate permissions. By default, it is `:current_user`.
+
+To configure this in your module:
+
+```elixir
+config :canary, current_user: :user
+```
+
+You can override this setting per plug/mounted hook by specifying `:current_user`.
 
 ### Action
-For Phoenix applications and Plug based pages, Canary determines the action automatically (from `conn.private.phoenix_action`).
-For non-Phoenix applications, or to override the action provided by Phoenix when using it with Plug, simply ensure that `conn.assigns.canary_action` contains an atom specifying the action.
 
-For the LiveView on handle_params it uses `socket.assigns.live_action` as action on handle_event it uses the `event_name` as action.
-> Note that the event_name is a string - but in Canary it's converted to an atom for consistency.
+For **Phoenix applications and Plug-based pages**, Canary determines the action automatically from `conn.private.phoenix_action`. In **non-Phoenix applications**, or when overriding Phoenix's default action behavior, set `conn.assigns.canary_action` with an atom specifying the action.
 
-Action can be limited by using `:only` or `:except` options, otherwise it will be performed on for actions.
+For **LiveView**:
+
+- In `handle_params`, Canary uses `socket.assigns.live_action`.
+- In `handle_event`, Canary uses the `event_name` (converted from a string to an atom for consistency).
+
+Actions can be limited using `:only` or `:except` options; otherwise, they apply to all actions.
 
 ### Resource
-For `load_resource` and `load_and_authorize_resource` functions it checks if the resource is already assigned, if not then it fetches it from the repo using `:id_name` form `params` (default `"id"`) and `:id_field` in struct (default `:id`).
+For `load_resource` and `load_and_authorize_resource`, Canary checks if the resource is already assigned. If not, it fetches the resource from the repository using:
 
-If the `:required` is set, then it will handle error when resource is not loaded.
+- `:id_name` from `params` (default: `"id"`).
+- `:id_field` in the struct (default: `:id`).
 
-It also supports `:preload` preloading association(s). Please refer to `Ecto.Query.preload/3` for additional informations about preloading associations.
+By default, **a resource is required**. That means the resource must be present in `conn.assigns` or `socket.assigns`. It's fetched using the `:model` name, which can be overridden with the `:as` option.
 
-For the `authorize_resource` it expects that resource is available in conn / socket assigns. By default it uses the `:model` name as key to fetch the resoruce. This can be set by using `:as` option. When resource is not set, then the model module name is set as resoiurce.
+If it cannot be found, an error is handled. To make it optional, set `:required` to `false`. In this case, the resource module name is used instead of a loaded struct.
 
-### Load resource
-Loads the resource having the id given in `params["id"]` from the database using the given Ecto repo and model, and assigns the resource to `assigns.<resource_name>`, where resource_name is inferred from the model name.
+You can also use `:preload` to preload associations. See `Ecto.Query.preload/3` for more details.
 
-### Authorize resource
-Checks whether or not the `subject` for the request can perform the given action on the given resource and assigns the result (true/false) to `assigns.authorized`. It is up to you to decide what to do with the result.
+For `authorize_resource`, the resource must be present in `conn.assigns` or `socket.assigns`. By default, it fetches the resource using the `:model` name, which can be overridden with the `:as` option.
 
-### Load and authorize resource
-Combines boths **Load resource** and **Authorize resource** in one function
+### Load Resource
+
+Loads a resource from the database using the specified **Ecto repo** and model. It assigns the result to `assigns.<resource_name>`, where `resource_name` is inferred from the model.
+
+### Authorize Resource
+
+Checks if the **subject** can perform a given action on a resource. The result (`true`/`false`) is assigned to `assigns.authorized`. The developer decides how to handle this result.
+
+### Load and Authorize Resource
+
+A combination of **Load Resource** and **Authorize Resource** in a single function.
 
 ## Configuration
 
-In order to use Canary you need to configure it `config/config.exs`. All settings except the `:repo` can be overriden when using the plug or hook.
+To use Canary, you need to configure it in `config/config.exs`. All settings, except for `:repo`, can be overridden when using the plug or hook.
 
-### Available config options
-| Name      | Description |  Example |
-| ----------- | ----------- | ----------- |
-| `:repo`      | Repo module name used in your app       | `YourApp.Repo` |
-| `:current_user`   | Key name to fetch from the assigns. It will be used as `subject` for `Canada.Can` to evaluate permissions. Default set to `:current_user`       | `:current_member` |
-| `:error_handler` | Module which implements `Canary.ErrorHandler` behaviour. It will be used to handle `:not_found` and `:unauthorized`. By default set to `Canary.DefaultHandler` | `YourApp.ErrorHandler` |
+### Available Configuration Options
 
-### Deprecated options
-| Name      | Description |  Example |
-| ----------- | ----------- | ----------- |
-| `:not_found_handler` | `{mod, fun}` tuple  | `{YourApp.ErrorHandler, :handle_not_found}` |
-| `:unauthorized_handler` | `{mod, fun}` tuple  | `{YourApp.ErrorHandler, :handle_unauthorized}` |
+| Name | Description | Example |
+| --- | --- | --- |
+| `:repo` | The Repo module used in your application. | `YourApp.Repo` |
+| `:current_user` | The key name used to fetch the user from assigns. This value will be used as the `subject` for `Canada.Can` to evaluate permissions. Defaults to `:current_user`. | `:current_member` |
+| `:error_handler` | A module that implements the `Canary.ErrorHandler` behavior. It is used to handle `:not_found` and `:unauthorized` errors. Defaults to `Canary.DefaultHandler`. | `YourApp.ErrorHandler` |
+
+### Deprecated Options
+
+| Name | Description | Example |
+| --- | --- | --- |
+| `:not_found_handler` | A `{mod, fun}` tuple for handling not found errors. | `{YourApp.ErrorHandler, :handle_not_found}` |
+| `:unauthorized_handler` | A `{mod, fun}` tuple for handling unauthorized errors. | `{YourApp.ErrorHandler, :handle_unauthorized}` |
 
 > #### Info {: .info}
 >
-> For the module configuration the `:error_handler` should be used instead of separate handler for not found and unauthorized errors. The handleds still can be overritten with plug / mount_canary options.
+> The `:error_handler` option should be used instead of separate handlers for `:not_found` and `:unauthorized` errors.
+> Handlers can still be overridden using plug or `mount_canary` options.
 
+### Example Configuration
 
-### Example
-
-```
+```elixir
 config :canary,
   repo: YourApp.Repo,
   current_user: :current_user,
@@ -73,7 +95,7 @@ config :canary,
 ### Overriding configuration
 
 #### Authorize different subject
-Sometimes there is need to perform authorization for different subject. You can override the `:current_user` with options passed to plug or hook.
+Sometimes, you may need to perform authorization for a different subject. You can override `:current_user` by passing options to the plug or hook.
 
 <!-- tabs-open -->
 ### Conn Plugs
@@ -85,7 +107,8 @@ plug :load_and_authorize_resource,
   current_user: :current_member
 ```
 
-with this override it will perform authorization check using `conn.assings.current_member` as a subject.
+With this override, the authorization check will use `conn.assigns.current_member` as the subject.
+
 
 ### LiveView Hooks
 ```elixir
@@ -97,13 +120,13 @@ mount_canary :load_and_authorize_resource,
   model: Team
 ```
 
-with this override it will perform authorization check for the `:handle_event` stage hook using `socket.assigns.current_member` as a subject.
+With this override, the authorization check for the `:handle_event` stage hook will use `socket.assigns.current_member` as the subject.
 <!-- tabs-close -->
 
 
 ### Different error handler
 
-If you want to override global Canary error handler you can override one of the functions `:not_found_handler` and `:unauthorized_handler`
+If you want to override the global Canary error handler, you can override one of the functions: `:not_found_handler` or `:unauthorized_handler`.
 
 <!-- tabs-open -->
 ### Conn Plugs
@@ -127,32 +150,34 @@ mount_canary :load_and_authorize_resource,
 ```
 <!-- tabs-close -->
 
-Error handler should implement the `Canary.ErrorHandler` behaviour. Check for the default implementation in `Canary.DefaultHandler`
+The error handler should implement the `Canary.ErrorHandler` behavior.
+Refer to the default implementation in `Canary.DefaultHandler`.
 
 ## Canary options
+Canary Plugs and Hooks use the same configuration options.
 
-Canary Plugs and Hooks uses the same configuration options.
+### Available Options
 
-### Available opts
-| Name      | Description |  Example |
-| ----------- | ----------- | ----------- |
-| `:model`      | Model module name used in your app  **Required**     | `Post` |
-| `:only` | Specifies for which actions plug/hook is enabled | `[:show, :edit, :update]` |
-| `:except` |  Specifies for which actions plug/hook is disabled  | `[:delete]` |
-| `:current_user`   | Key name to fetch from the assigns. It will be used as `subject` for `Canada.Can` to evaluate permissions. Default set to `:current_user`. Applies only for `authorize_resource` or `load_and_authorize_resource`       | `:current_member` |
-| `:on` | Specifies the LiveView lifecycle stages to attach the hook. Default `:handle_params` **Available only in Canary.Hooks** | `[:handle_params, :handle_event]` |
-| `:as` | Specifies the resource_name key in assigns | `:team_post` |
-| `:id_name` | Specifies the name of the id in params, *defaults to "id"* | `:post_id` |
-| `:id_field` | Specifies the name of the ID field in the database for searching :id_name value, *defaults to "id"*. | `:post_id` |
-| `:required` | Specifies if the resource is required, when it's not found it will handle not found error, *defaults to true* | false |
-| `:not_found_handler` | `{mod, fun}` tuple, it overrides the default error handler for not found error  | `{YourApp.ErrorHandler, :custom_handle_not_found}` |
-| `:unauthorized_handler` | `{mod, fun}` tuple, it overrides the default error handler for unauthorized error  | `{YourApp.ErrorHandler, :custom_handle_unauthorized}` |
+| Name | Description | Example |
+| --- | --- | --- |
+| `:model` | The model module name used in your app. **Required** | `Post` |
+| `:only` | Specifies the actions for which the plug/hook is enabled. | `[:show, :edit, :update]` |
+| `:except` | Specifies the actions for which the plug/hook is disabled. | `[:delete]` |
+| `:current_user` | The key name used to fetch the user from assigns. This value will be used as the `subject` for `Canada.Can` to evaluate permissions. Defaults to `:current_user`. Applies only to `authorize_resource` or `load_and_authorize_resource`. | `:current_member` |
+| `:on` | Specifies the LiveView lifecycle stages where the hook should be attached. Defaults to `:handle_params`. **Available only in Canary.Hooks** | `[:handle_params, :handle_event]` |
+| `:as` | Specifies the key name under which the resource will be stored in assigns. | `:team_post` |
+| `:id_name` | Specifies the name of the ID in params. *Defaults to `"id"`*. | `:post_id` |
+| `:id_field` | Specifies the database field name used to search for the `id_name` value. *Defaults to `"id"`*. | `:post_id` |
+| `:required` | Determines if the resource is required. If not found, it triggers a not found error. *Defaults to `true`*. | `false` |
+| `:not_found_handler` | A `{mod, fun}` tuple that overrides the default error handler for not found errors. | `{YourApp.ErrorHandler, :custom_handle_not_found}` |
+| `:unauthorized_handler` | A `{mod, fun}` tuple that overrides the default error handler for unauthorized errors. | `{YourApp.ErrorHandler, :custom_handle_unauthorized}` |
 
-### Deprecated options
-| Name      | Description |  Example |
-| ----------- | ----------- | ----------- |
-| `:non_id_actions` | Additional actions for which Canary will authorize based on the model name | `[:index, :new, :create]` |
-| `:persisted` | Specifies the resource should always be loaded from the database, defaults to false **Available only in Canary.Plugs** | true |
+### Deprecated Options
+
+| Name | Description | Example |
+| --- | --- | --- |
+| `:non_id_actions` | Additional actions for which Canary will authorize based on the model name. | `[:index, :new, :create]` |
+| `:persisted` | Forces the resource to always be loaded from the database. Defaults to `false`. **Available only in Canary.Plugs** | `true` |
 
 ### Examples
 
@@ -193,58 +218,118 @@ Canary Plugs and Hooks uses the same configuration options.
 
 ## Plug and Hooks
 
-`Canary.Plugs` and `Canary.Hooks` should work the same way in most cases.
 
+`Canary.Plugs` and `Canary.Hooks` should work the same way in most cases, providing a unified approach to authorization for both Plug-based controllers and LiveView.
 
-### Authorize resource
+- **Shared Functionality:**
+  Both Plugs and Hooks allow for resource loading and authorization using similar configuration options. This ensures consistency across different parts of your application.
 
-Authorize the subject key from `assigns` - by default `:current_user` - for the given resource. If the `:current_user` is not authorized it will set `assigns.authorized` to `false` and call the `handle_unauthorized/1` from the `:error_handler` module set in config - or `:unauthorized_handler` from opts.
+- **Differences:**
+  - `Canary.Plugs` is designed for use in traditional Phoenix controllers and pipelines.
+  - `Canary.Hooks` is specifically built for LiveView and integrates with lifecycle events such as `:handle_params` and `:handle_event`.
 
-For the authorization check, it uses the `can?/3` function from the `Canada.Can` module -
+- **Configuration Compatibility:**
+  Most options, such as `:model`, `:current_user`, `:only`, `:except`, and error handlers, function identically in both Plugs and Hooks. However, `Canary.Hooks` includes the `:on` option, allowing you to specify which LiveView lifecycle stage the authorization should run on.
 
-`can?(subject, action, resource)` where:
+By keeping their behavior aligned, Canary ensures a seamless developer experience, whether you're working with traditional controller-based actions or real-time LiveView interactions.
+### Authorize Resource
 
-1. The subject is the `:current_user` from the socket assigns. The `:current_user` key can be changed in the `opts` or in the `Application.get_env(:canary, :current_user, :current_user)`. By default it's `:current_user`.
-2. Current action
-3. The resource is the loaded resource from the socket assigns or the model name if the resource is not loaded and not required.
+The `authorize_resource` function checks whether the subject, typically stored in `assigns` under `:current_user`, is authorized to access a given resource. If the `:current_user` is not authorized, it sets `assigns.authorized` to `false` and calls the `handle_unauthorized/1` function from the `:error_handler` module configured in `config.exs` or the `:unauthorized_handler` specified in the options.
 
-You can find out more in [Glossary](getting-started.md#glossary) and [Canary options](getting-started.md#canary-options)
+#### Authorization Logic
 
-### Load resource
+The authorization check is performed using the `can?/3` function from the `Canada.Can` protocol implemeted for `subject`:
 
-Load the resource with id given in `params` - by "id" key (default) - and ecto model given by `:id` field form `opts[:model]` into `assigns` by the `resource_name` where it is a Atom generated from the model module name.
-
-Load function can get the param by different key - you can override the default "id" by setting the `:id_name` option.
-The `:id` field used to get the resource also might be changed with `:id_field` option.
-The `resource_name` can be also overriten with the `:as` option.
-
-For example:
 ```elixir
-# replace plug with mount_canary for LiveView Hooks
+can?(subject, action, resource)
+```
+
+where:
+
+1. **Subject** – The entity being authorized, typically fetched from `assigns.current_user`.
+   - By default, Canary looks for `:current_user`.
+   - This key can be overridden via the `opts` or globally in `Application.get_env(:canary, :current_user, :current_user)`.
+
+2. **Action** – The current action being performed.
+
+3. **Resource** – The resource being accessed.
+   - If the resource is already loaded, it is taken from `assigns`.
+   - If the resource is not loaded and not required, the model name is used instead.
+
+#### Example Usage
+
+```elixir
+# Replace `plug` with `mount_canary` for LiveView Hooks
+plug :authorize_resource,
+  current_user: :current_member,
+  model: Event,
+  as: :public_event
+```
+
+In this example:
+
+1. The `authorize_resource` function checks whether `:current_member` (instead of the default `:current_user`) is authorized to access the `Event` resource.
+2. The resource is expected to be available in `assigns.public_event`.
+3. If the user is unauthorized, `assigns.authorized` is set to false, and the `unauthorized_handler` is triggered.
+
+### Load Resource
+
+The `load_resource` function fetches a resource based on an ID provided in `params` and assigns it to `assigns`. By default, it uses the `"id"` key from `params` and retrieves the resource from the database using the `:id` field of the model specified in `opts[:model]`. The loaded resource is stored under `assigns` using a key derived from the model module name.
+
+#### Customizing the Load Behavior
+
+You can modify the default behavior with the following options:
+
+- **`:id_name`** – Override the default `"id"` param key.
+- **`:id_field`** – Change the field used to query the resource in the database.
+- **`:as`** – Override the default `assigns` key where the resource is stored.
+- **`:required`** - When set to `false` it will assign `nil` instad calling the `not_found_handler`.
+
+#### Example Usage
+
+```elixir
+# Replace `plug` with `mount_canary` for LiveView Hooks
 plug :load_resource,
   model: Event,
   as: :public_event,
   id_name: "uuid",
-  id_field: :uuid
+  id_field: :uuid,
+  required: false
 ```
 
-The `load_resource` function will try to fetch the "uuid" from `params`, then will try to get `Event` from `repo` by `:uuid` field, and then it will be assigned to the `assigns.public_event`.
+In this example:
 
-The `assigns.public_event` might be set to `nil` if there is no matchin `Event`. If you want to call the `not_found_handler` then you need to set the `:required` flag.
+1. `load_resource` fetches the `"uuid"` from `params`.
+2. It queries `Event` using the `:uuid` field in the database.
+3. The result is assigned to `assigns.public_event`.
+4. If no matching `Event` is found, `assigns.public_event` will be set to `nil`.
 
-You can check all available [Canary options](getting-started.md#canary-options)
+To trigger the `not_found_handler` when the resource is missing, ensure the `:required` flag is **not explicitly set to** `false` (it defaults to `true`).
 
-### Load and authorize resource
 
-It combines two other functions - `load_resource` and `authorize_resource`.
+### Load and Authorize Resource
+
+The `load_and_authorize_resource` function combines two operations:
+
+1. **Loading the Resource** – Fetches the resource based on an ID from `params` and assigns it to `assigns`, similar to `load_resource`.
+2. **Authorizing the Resource** – Checks whether the subject (by default, `:current_user`) is authorized to access the resource, using `authorize_resource`.
+
+This function ensures that resources are both retrieved and access-controlled within a single step.
 
 > #### Error handler order {: .info}
 >
-> If both an :unauthorized_handler and a :not_found_handler are specified for load_and_authorize_resource, and the request meets the criteria for both, the :unauthorized_handler will be called first.
+> If both `:unauthorized_handler` and `:not_found_handler` are specified for `load_and_authorize_resource`, and the request meets the criteria for both, the `:unauthorized_handler` will be called first.
 
-## Non-id actions
 
-For the non-id actions where there is no resource to be loaded please use `:authorize_resource` and limit other functions `:load_resource` or `:load_and_authorize_resource` to skip those actions. By default `:required` option is set to true, so when resouce cannot be get from repo the model the `not_found_handler` will be called. Changing `:required` to false will allow to set resource as nil, and then module name will be used as resource for the call to `Canada.can?`.
+## Non-ID Actions
+
+For actions that do not require loading a specific resource (such as `:index`, `:new`, and `:create`), use `:authorize_resource` instead of `:load_resource` or `:load_and_authorize_resource`.
+Ensure that these functions are limited to actions where resource loading is necessary.
+
+By default, the `:required` option is set to `true`, meaning that if the resource cannot be found in the repository, the `not_found_handler` will be called.
+Setting `:required` to `false` allows the resource to be assigned as `nil`, in which case the model module name will be used as the resource when calling `can?/3`.
+
+### Example Usage
 
 ```elixir
 plug :authorize_resource,
@@ -257,99 +342,117 @@ plug :load_and_authorize_resource,
   except: [:index, :create, :new]
 ```
 
-To load all resources on `:index` aciton you can setup plug, or add the load function directly in `index/2`
+### Loading All Resources in `:index` Action
+If you need to load multiple resources for the `:index` action, you can either use a plug or load the resources directly within the `index/2` controller action.
 
+#### Option 1: Using a Plug
 ```elixir
-  # with plug
+plug :load_all_resources when action in [:index]
 
-  plug :load_all_resources when action in [:index]
-  defp load_all_resources(conn, _opts) do
-    assign(:posts, Posts.list_posts())
-  end
-
-  # or directly in the controller action
-
-  def index(conn, _params) do
-    posts = Posts.list_posts()
-    render(conn, "index.html", posts: posts)
-  end
+defp load_all_resources(conn, _opts) do
+  assign(conn, :posts, Posts.list_posts())
+end
 ```
 
-## Nested resources
+#### Option 2: Loading Directly in the Controller Action
+```elixir
+def index(conn, _params) do
+  posts = Posts.list_posts()
+  render(conn, "index.html", posts: posts)
+end
+```
 
-Sometimes you need to load and authorize a parent resource when you have a relationship between two resources and you are creating a new one or listing all the children of that parent. By specifying the `:required` option with `true` you can load and/or authorize a nested resource.
+## Nested Resources
 
-If the parent resource is not available then the
+Sometimes, you need to load and authorize a parent resource when dealing with nested relationships—such as when creating a child resource or listing all children of a parent. With the default `:required` set to true, if the parent resource is not found, the `not_found_handler` will be called.
 
-For example, when loading and authorizing a `Post` resource which can have one or more `Comment` resources, use
+### Example Usage
+
+When loading and authorizing a `Post` resource that `has_many` `Comment` resources:
 
 ```elixir
-# parent
+# Load and authorize the parent (Post)
 plug :load_and_authorize_resource,
   model: Post,
   id_name: "post_id",
   only: [:create_comment]
 
-# child
-plug :authorize_resouce,
+# Authorize action the child (Comment)
+plug :authorize_resource,
   model: Comment,
   only: [:create_comment, :save_comment],
   required: false
 ```
 
-to load and authorize the parent `Post` resource using the `post_id` in `/posts/:post_id/comments` before you create the `Comment` resource using its parent.
-The `:required` option will call `non_found_handler` when the parent resource (`Post`) is not found by given `post_id`.
+#### Explanation
 
-The second plug will perfom the authorization for non-id action which is `:create_comment` and `:save_commen`. The `Comment` module name will be used as resource for the call to `Canada.can?`.
+1. The first plug loads and authorizes the parent `Post` resource using the `post_id` from `params` in the URL (`/posts/:post_id/comments`).
+   - The `:required` option ensures that if the Post is missing, the `not_found_handler` is called.
+2. The second plug authorizes actions on the child `Comment` resource.
+  - Since this is a **non-ID action**, `authorize_resource` is used.
+  - The `Comment` module name is passed as the resource to `can?/3` since no specific `Comment` does not exists yet.
 
-## Definig permissions
+This approach ensures that authorization is enforced correctly in nested resource scenarios.
 
-You need to implement [Canada.Can protocol](https://github.com/jarednorman/canada) for each subject on which you want to perform authorization checks.
-Default subject is the `:current_user` key taken from Plug / LiveView assigns.
+## Defining Permissions
 
-Let's assume that you have `User` module in your app which is used for Autentication.
+To perform authorization checks, you need to implement the [`Canada.Can` protocol](https://github.com/jarednorman/canada) for each subject that requires permission validation.
+By default, Canary uses `:current_user` from Plug or LiveView assigns as the subject.
 
-Permissions for authenticated user, for example `lib/abilities/user.ex`:
+### Example: Defining Permissions for an Authenticated User
+
+Assume your application has a `User` module for authentication.
+You can define permissions in `lib/abilities/user.ex`:
+
 ```elixir
 defimpl Canada.Can, for: User do
-
   # Super admin can do everything
   def can?(%User{role: "superadmin"}, _action, _resource), do: true
 
-  # Post owner can view and change it
-  def can?(%User{id: user_id}, action, %Post{ user_id: user_id })
+  # Post owner can view and modify their own posts
+  def can?(%User{id: user_id}, action, %Post{user_id: user_id})
     when action in [:show, :edit, :update], do: true
 
+  # Deny all other actions by default
   def can?(%User{id: user_id}, _, _), do: false
 end
 ```
 
-When the subject (`:current_user` assigns) is `nil`, and the authorization check is performed then `can/3` will be performed against `Atom`.
+### Handling Anonymous Users
 
-Permissions for anonymous users, for example: `lib/abilities/anonymous.ex`:
+If the subject (`:current_user` in assigns) is `nil`, and the authorization check is performed then `can/3` will be performed against `Atom`.
+
+For anonymous users, define permissions, for example: `lib/abilities/anonymous.ex`:
 ```elixir
 defimpl Canada.Can, for: Atom do
-  # Registration
+  # Allow anonymous users to register
   def can?(nil, :new, User), do: true
   def can?(nil, :create, User), do: true
   def can?(nil, :confirm, User), do: true
 
-  # Session
+  # Allow anonymous users to create sessions
   def can?(nil, :new, Session), do: true
   def can?(nil, :create, Session), do: true
 
+  # Deny all other actions
   def can?(_, _action, _model), do: false
 end
 ```
 
-Although this is optional, as it might not be a valid case if you have plug which requires user for example `:require_authenticated_user` in the router pipeline.
+Defining permissions for `Atom` and `nil` subjects is optional.
+If your application enforces authentication using a plug like `:require_authenticated_user` in the router pipeline, this may not be necessary.
+
 
 ## Error handling
 
-### Handling unauthorized actions
+### Handling Unauthorized Actions
 
-By default, when an action is unauthorized, Canary simply sets `assigns.authorized` to `false`.
-However, you can configure a handler function to be called when authorization fails. Canary will pass the `Plug.Conn` to the given function. The handler should accept a `Plug.Conn` as its only argument, and should return a `Plug.Conn`.
+By default, when subject is unauthorized to access an action, Canary sets `assigns.authorized` to `false`.
+However, you can configure a custom handler function to be called when authorization fails.
+Canary will pass the `Plug.Conn` or `Phoenix.LiveView.Socket` to the specified function, which should accept `conn` or `socket` as its only argument and return a `Plug.Conn` or tuple `{:halt, socket}`.
+
+The error handler should implement the `Canary.ErrorHandler` behavior.
+Refer to the default implementation in `Canary.DefaultHandler`.
 
 For example, to have Canary call `ErrorHandler.handle_unauthorized/1`:
 
@@ -359,27 +462,36 @@ config :canary, error_handler: ErrorHandler
 
 > #### LiveView Hook handlers
 >
-> LiveView error handler shoud return `{:halt, socket}`. For the `handle_params` it also should do the redirect.
+> In LiveView, the error handler should return `{:halt, socket}`.
+> For `handle_params`, it should also perform a redirect.
 
-### Handling resource not found
 
-By default, when a resource is not found, Canary simply sets the resource in `assigns` to `nil`. Like unauthorized action handling , you can configure a function to which Canary will pass the `conn` or `socket` when a resource is not found:
+### Handling Resource Not Found
+
+By default, when a resource is not found, Canary sets the resource in `assigns` to `nil`.
+Similar to unauthorized action handling, you can configure a function that Canary will call when a resource is missing. This function will receive the `conn` (for Plugs) or `socket` (for LiveView).
 
 ```elixir
 config :canary, error_handler: ErrorHandler
 ```
 
-You can also specify handlers on an individual basis (which will override the corresponding configured handler, if any) by specifying the corresponding `opt` in the plug / mount_canary call:
+### Overriding Handlers Per Action
+
+You can specify custom handlers per action using `opts` in the `plug` or `mount_canary` call.
+These handlers will override any globally configured error handlers.
 
 <!-- tabs-open -->
+
 ### Conn Plugs
+
 ```elixir
 plug :load_and_authorize_resource Post,
   unauthorized_handler: {Helpers, :handle_unauthorized},
   not_found_handler: {Helpers, :handle_not_found}
 ```
 
-> Tip: If you would like the request handling to stop after the handler function exits, e.g. when redirecting, be sure to call `Plug.Conn.halt/1` within your handler like so:
+> **Tip:** If you want to stop request handling after the handler function executes (e.g., for a redirect),
+> be sure to call `Plug.Conn.halt/1` within your handler:
 
 ```elixir
 def handle_unauthorized(conn) do
@@ -391,13 +503,15 @@ end
 ```
 
 ### LiveView Hooks
+
 ```elixir
 mount_canary :load_and_authorize_resource Post,
   unauthorized_handler: {Helpers, :handle_unauthorized},
   not_found_handler: {Helpers, :handle_not_found}
 ```
 
-> Tip: If you would like the request handling to stop after the handler function exits, e.g. when redirecting, be sure to call `Plug.Conn.halt/1` within your handler like so:
+> **Tip:** If you want to stop request handling after the handler function executes (e.g., for a redirect),
+> be sure to call `Plug.Conn.halt/1` within your handler:
 
 ```elixir
 def handle_unauthorized(socket) do
@@ -406,7 +520,7 @@ end
 ```
 <!-- tabs-close -->
 
-
 > #### Error handler order {: .info}
 >
-> If both an `:unauthorized_handler` and a `:not_found_handler` are specified for `load_and_authorize_resource`, and the request meets the criteria for both, the `:unauthorized_handler` will be called first.
+> If both an `:unauthorized_handler` and a `:not_found_handler` are specified for `load_and_authorize_resource`,
+> and the request meets the criteria for both, the `:unauthorized_handler` will be called first.

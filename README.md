@@ -7,7 +7,7 @@ An authorization library in Elixir for `Plug` and `Phoenix.LiveView` application
 
 Inspired by [CanCan](https://github.com/CanCanCommunity/cancancan) for Ruby on Rails.
 
-[Read the docs](https://hexdocs.pm/canary/2.0.0-dev/)
+[Read the docs](https://hexdocs.pm/canary/2.0.0-dev/getting-started.html)
 
 # Canary 2.0.0
 
